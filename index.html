@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>ConsPIndo - Consortium Pioneers Indonesia</title>
+ 
+   <link rel="stylesheet" href="style.css">
+   <!-- Custom JavaScript -->
+  
+  <!-- External CSS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet"/>
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet" />
+
+
+     <!-- External Scripts -->
+  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+  
+  <!-- Firebase v9 SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+</head>
+
+<body>
+  <!-- Header Slider -->
+  <div id="header-slider">
+    <img src="https://raw.githubusercontent.com/Evanadua/MyProject_CPiN/refs/heads/main/assets/images/header1.jpg" class="slide" alt="Header Slide 1" />
+    <img src="https://raw.githubusercontent.com/Evanadua/MyProject_CPiN/refs/heads/main/assets/images/header2.jpg" class="slide" alt="Header Slide 2" />
+    <img src="https://raw.githubusercontent.com/Evanadua/MyProject_CPiN/refs/heads/main/assets/images/header3.jpg" class="slide" alt="Header Slide 3" />
+  </div>
+
+<script>
+ 	// JS placeholder
+
+function startHeaderSlider() {
+  const slides = document.querySelectorAll('#header-slider .slide');
+  let index = 0;
+  if (slides.length === 0) return;
+
+  slides[index].classList.add('active');
+
+  setInterval(() => {
+    slides[index].classList.remove('active');
+    index = (index + 1) % slides.length;
+    slides[index].classList.add('active');
+  }, 4000);
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  startHeaderSlider();
+});
+</script>
+
+  <!-- Header Section 
+  <div class="header-wrap">
+    <img alt="Header Background" class="header-bg" id="headerBg" src="https://raw.githubusercontent.com/Evanadua/MyProject_CPiN/refs/heads/main/img_header.png"/>
+    <button class="header-bg-upload" onclick="document.getElementById('headerBgInput').click()">
+      Ganti Gambar Header
+    </button>
+    <input accept="image/*" id="headerBgInput" onchange="changeHeaderBg(event)" style="display:none" type="file"/>
+    <div class="header">
+      <div class="header-row">
+        <div class="header-logo-wrap">
+          <img alt="Logo ConsPiSindo" class="header-logo" id="logoImg" src="https://raw.githubusercontent.com/Evanadua/MyProject_CPiN/refs/heads/main/logo.png"/>
+          <button class="header-logo-upload" onclick="document.getElementById('logoInput').click()">
+            Ganti Logo
+          </button>
+          <input accept="image/*" id="logoInput" onchange="changeLogo(event)" style="display:none" type="file"/>
+        </div>
+        -->
+        <div class="header-content">
+          <div class="header-title">ConsPIndo</div>
+          <div class="header-desc">Consortium Pioneers Indonesia</div>
+          <div class="header-info">
+            <span>1 Member</span>
+            &middot;
+            <span>General Info</span>
+          </div>
+        </div>
+        <div class="header-btns">
+          <button class="invite" id="inviteBtn">Invite</button>
+          <button id="buyNowBtn">Buy Now</button>
+        </div>
+      </div>
+    </div>
+    <div style="clear:both;"></div>
+  </div>
+
+  <!-- Tab Menu -->
+  <div class="tab-menu">
+    <button class="active" id="homeTab">Home</button>
+    <button id="scheduleTab">Schedule</button>
+    <button id="servicesTab">Services</button>
+    <button id="blogTab">Blog</button>
+  </div>
+  
+<div id="adminMemberList"></div>
+ <!-- Harus ada -->
+  <button class="btn" id="adminMenuBtn" style="display:none;margin:8px 0;">Admin Panel</button>
+  
+  <!-- Auth Modal -->
+  <div class="modal" id="authModal" style="display:none;">
+    <div class="modal-content" style="max-width:400px;">
+      <span class="close" onclick="closeModal('authModal')">&times;</span>
+      <h2 style="text-align:center;margin-top:0;">Registrasi / Login</h2>
+      <div id="authTabs" style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;">
+        <button class="btn" id="tabLogin" style="background:#2563eb;color:#fff;">Login</button>
+        <button class="btn" id="tabRegister" style="background:#eee;color:#2563eb;">Registrasi</button>
+      </div>
+      <form id="loginForm">
+        <input id="loginEmail" placeholder="Email" style="width:100%;margin-bottom:8px;" type="email"/>
+        <input id="loginPassword" placeholder="Password" style="width:100%;margin-bottom:8px;" type="password"/>
+         <button class="btn" id="loginBtn" type="button">Login</button>
+      </form>
+      <form id="registerForm" style="display:none;">
+        <input id="regEmail" placeholder="Email" style="width:100%;margin-bottom:8px;" type="email"/>
+        <input id="regPassword" placeholder="Password" style="width:100%;margin-bottom:8px;" type="password"/>
+        <input id="regPassword2" placeholder="Konfirmasi Password" style="width:100%;margin-bottom:8px;" type="password"/>
+        <button class="btn" id="registerBtn" type="button">Register</button>
+      </form>
+      <div id="authError" style="color:red;margin-top:10px;display:none;"></div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div id="pageContent"></div>
+    
+    <!-- Modal untuk Artikel Lengkap -->
+    <div id="fullArticleModal">
+      <button onclick="closeFullArticle()" style="float: right; background: #f00; color: #fff; border: none; padding: 5px 10px; cursor: pointer;">X</button>
+      <h4 id="fullArticleTitle"></h4>
+      <p id="fullArticleBody"></p>
+    </div>
+  </div>
+
+  <!-- Floating Action Button -->
+  <div class="fab" onclick="alert('Menu feature coming soon!')">
+    <i class="fa fa-bars"></i>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="bottom-nav">
+    <a class="nav-item active" href="#" id="mySitesMenu">
+      <i class="fa fa-home"></i>
+      <span>My Sites</span>
+    </a>
+    <a class="nav-item" href="#" id="groupMenu">
+      <i class="fa fa-comments"></i>
+      <span>Group</span>
+    </a>
+    <a class="nav-item" href="#" id="shopMenu">
+      <i class="fa fa-store"></i>
+      <span>Shop</span>
+    </a>
+    <a class="nav-item" href="#" id="myProfileMenu">
+      <i class="fa fa-user"></i>
+      <span>My Profile</span>
+    </a>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal" id="inviteModal" style="display:none;">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('inviteModal')">&times;</span>
+      <h3>Undang Teman ke Group</h3>
+      <p>Bagikan kode invite: <b id="groupInviteCodeModal">2QQ32Y</b></p>
+      <button onclick="copyGroupInviteCode()">Salin Kode</button>
+    </div>
+  </div>
+<div class="modal" id="mySitesModal" style="display:none;">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('mySitesModal')">&times;</span>
+      <h3>My Sites</h3>
+      <div id="mySitesList"></div>
+    </div>
+  </div>
+  <div class="main-content">
+  <div id="shopProducts"></div> <!-- Ini perlu agar renderShopProducts bekerja -->
+  <div id="pageContent"></div>
+  </div>
+</div>
+  <div class="modal" id="myProfileModal" style="display:none;">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('myProfileModal')">&times;</span>
+      <h3>My Profile</h3>
+      <div id="profileInfo"></div>
+      <button class="btn" onclick="openChangePwdModal()">Ganti Password</button>
+    </div>
+  </div>
+  <div class="modal" id="shopModal" style="display:none;">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('shopModal')">&times;</span>
+      <h3>Shop</h3>
+      <div id="shopProductsList"></div>
+      <button class="btn" onclick="openCart()">Keranjang Belanja</button>
+    </div>
+  </div>
+  <div class="modal" id="buyNowModal" style="display:none;">
+    <div class="modal-content" id="buyNowContent" style="max-width:350px;">
+     <span class="close" onclick="closeModal('buyNowModal')">&times;</span>
+      <h3>Pesan Sekarang</h3>
+      <p>Silakan isi detail pesanan Anda:</p>
+      <input id="buyerNameCheckout" placeholder="Nama Anda" style="width:100%;margin-bottom:8px;" type="text"/>
+      <input id="buyerAddressCheckout" placeholder="Alamat Pengiriman" style="width:100%;margin-bottom:8px;" type="text"/>
+      <button class="btn" onclick="processOrder()">Proses Pesanan</button>
+    </div>
+  </div>
+
+<div class="modal" id="cartModal" style="display:none;">
+  <div class="modal-content" style="max-width:400px;">
+    <span class="close" onclick="closeModal('cartModal')">&times;</span>
+    <h3>Keranjang Belanja</h3>
+    <div id="cartItems"></div>
+    <button class="btn" onclick="checkout()">Checkout</button>
+  </div>
+</div><!-- Modal Detil Produk -->
+<div id="productDetailModal" class="modal" style="display:none;">
+  <div class="modal-content" id="productDetailContent" style="max-width:400px;">
+    <!-- Konten akan dimuat dari JS -->
+  </div>
+</div>
+
+  <div class="modal" id="groupChatModal" style="display:none;">
+    <div class="modal-content" style="max-width:400px;">
+      <span class="close" onclick="closeModal('groupChatModal')">&times;</span>
+      <h3 id="groupChatTitle">Group Chat</h3>
+      <div id="groupChatMessages" style="height:180px;overflow:auto;border:1px solid #eee;padding:8px 6px 8px 6px;margin-bottom:10px;background:#f9f9f9;border-radius:6px;"></div>
+      <input id="groupChatInput" placeholder="Ketik pesan..." style="width:70%;" type="text"/>
+      <button class="btn" onclick="sendGroupChat()">Kirim</button>
+    </div>
+  </div>
+
+  <div class="modal" id="changePwdModal" style="display:none;">
+    <div class="modal-content" style="max-width:350px;">
+      <span class="close" onclick="closeModal('changePwdModal')">&times;</span>
+      <h3>Ganti Password Admin</h3>
+      <input type="password" id="oldPwd" placeholder="Password Lama" style="width:100%;margin-bottom:8px;">
+      <input type="password" id="newPwd" placeholder="Password Baru" style="width:100%;margin-bottom:8px;">
+      <input type="password" id="confirmPwd" placeholder="Ulangi Password Baru" style="width:100%;margin-bottom:8px;">
+      <button class="btn" onclick="changeAdminPassword()">Simpan</button>
+    </div>
+  </div>
+
+  
+<div id="eventModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal('eventModal')">&times;</span>
+    <h3>Tambah/Edit Event</h3>
+    <input id="eventTitle" placeholder="Judul Event">
+    <input id="eventStart" type="datetime-local">
+    <input id="eventEnd" type="datetime-local">
+    <textarea id="eventDescription" placeholder="Deskripsi"></textarea>
+    <button onclick="saveEvent()">Simpan</button>
+  </div>
+</div>
+
+
+  <!-- Footer -->
+  <div class="footer">
+    &copy; 2025 ConsPIndo. All rights reserved.<br/>
+    Trademark and design by <strong>MeribuCo</strong>
+    <div class="footer-line"></div><br/>
+  </div>
+
+  <script src="main.js"></script>
+
+  <style>
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+
+  .btn-row .btn {
+    flex: 1 1 auto;
+  }
+</style>
+
+
+</body>
+</html>
