@@ -238,7 +238,7 @@ function renderProductForm(container, id = null, prod = { name: '', price: '', c
     </select>
     <input type="number" id="prodStock" placeholder="Stok" value="${prod.stock}">
     <textarea id="prodDesc" placeholder="Deskripsi">${prod.desc}</textarea>
-    <input type="file" id="prodImg" accept="image/*">
+    <input type="text" id="prodImg" placeholder="URL Gambar dari GitHub (RAW)" value="${prod.img}">
     <button onclick="${id ? `saveEditProduct('${id}')` : `saveNewProduct()`}" class="btn">${id ? 'Simpan Edit' : 'Simpan Produk'}</button>
     <button onclick="hideAddProductForm()" class="btn delete-btn">Batal</button>
   `;
@@ -396,91 +396,94 @@ function processOrder() {
     alert('Gagal memproses pesanan: ' + err.message);
   });
 }
+function saveEditProduct(id) {
+  const imageUrl = document.getElementById('prodImg').value;
+  const name = document.getElementById('prodName').value;
+  const price = parseFloat(document.getElementById('prodPrice').value);
+  const currency = document.getElementById('prodCurrency').value;
+  const stock = parseInt(document.getElementById('prodStock').value);
+  const desc = document.getElementById('prodDesc').value;
+
+  if (!name || isNaN(price) || isNaN(stock) || !imageUrl) {
+    alert("Mohon lengkapi semua field dengan benar.");
+    return;
+  }
+
+  const data = {
+    name,
+    price,
+    currency,
+    stock,
+    img: imageUrl,
+    desc
+  };
+
+  firestore.collection('products').doc(id).update(data).then(() => {
+    hideAddProductForm();
+    renderShopProducts();
+  }).catch(err => {
+    alert("Gagal menyimpan perubahan: " + err.message);
+  });
+}
+
 function saveNewProduct() {
   const name = document.getElementById('prodName').value;
   const price = parseFloat(document.getElementById('prodPrice').value);
   const currency = document.getElementById('prodCurrency').value;
   const stock = parseInt(document.getElementById('prodStock').value);
+  const imageUrl = document.getElementById('prodImg').value;
   const desc = document.getElementById('prodDesc').value;
-  const fileInput = document.getElementById('prodImg');
-  const file = fileInput.files[0];
 
-  if (!name || isNaN(price) || isNaN(stock)) {
-    alert('Mohon lengkapi semua data dengan benar.');
+  if (!name || isNaN(price) || isNaN(stock) || !imageUrl) {
+    alert("Mohon lengkapi semua field dengan benar.");
     return;
   }
 
-  const saveData = (imgUrl = '') => {
-    firestore.collection('products').add({
-      name, price, currency, stock, desc,
-      img: imgUrl,
-      createdAt: new Date()
-    }).then(() => {
-      alert('Produk berhasil ditambahkan.');
-      hideAddProductForm();
-      renderShopProducts();
-    }).catch(err => {
-      alert('Gagal menyimpan produk: ' + err.message);
-    });
+  const data = {
+    name,
+    price,
+    currency,
+    stock,
+    img: imageUrl,
+    desc,
+    createdAt: new Date()
   };
 
-  if (file) {
-    const storageRef = storage.ref('productImages/' + Date.now() + '_' + file.name);
-    storageRef.put(file).then(snapshot => {
-      snapshot.ref.getDownloadURL().then(downloadURL => {
-        saveData(downloadURL);
-      });
-    }).catch(err => {
-      alert('Gagal mengunggah gambar: ' + err.message);
-    });
-  } else {
-    saveData();
-  }
+  firestore.collection('products').add(data).then(() => {
+    hideAddProductForm();
+    renderShopProducts();
+  }).catch(err => {
+    alert("Gagal menambahkan produk: " + err.message);
+  });
 }
-function saveEditProduct(id) {
+function updateData() {
+  const imageUrl = document.getElementById('prodImg').value;
   const name = document.getElementById('prodName').value;
   const price = parseFloat(document.getElementById('prodPrice').value);
   const currency = document.getElementById('prodCurrency').value;
   const stock = parseInt(document.getElementById('prodStock').value);
   const desc = document.getElementById('prodDesc').value;
-  const fileInput = document.getElementById('prodImg');
-  const file = fileInput.files[0];
 
-  if (!name || isNaN(price) || isNaN(stock)) {
-    alert('Mohon lengkapi semua data dengan benar.');
+  if (!name || isNaN(price) || isNaN(stock) || !imageUrl) {
+    alert("Mohon lengkapi semua field dengan benar.");
     return;
   }
 
-  const updateData = (imgUrl = null) => {
-    const updatedFields = {
-      name, price, currency, stock, desc,
-      updatedAt: new Date()
-    };
-    if (imgUrl !== null) updatedFields.img = imgUrl;
-
-    firestore.collection('products').doc(id).update(updatedFields)
-      .then(() => {
-        alert('Produk berhasil diperbarui.');
-        hideAddProductForm();
-        renderShopProducts();
-      })
-      .catch(err => {
-        alert('Gagal menyimpan perubahan: ' + err.message);
-      });
+  const data = {
+    name,
+    price,
+    currency,
+    stock,
+    img: imageUrl,
+    desc
   };
 
-  if (file) {
-    const storageRef = storage.ref('productImages/' + Date.now() + '_' + file.name);
-    storageRef.put(file).then(snapshot => {
-      snapshot.ref.getDownloadURL().then(downloadURL => {
-        updateData(downloadURL);
-      });
-    }).catch(err => {
-      alert('Gagal mengunggah gambar: ' + err.message);
-    });
-  } else {
-    updateData(); // gunakan data lama jika tidak ada gambar baru
-  }
+  firestore.collection('products').doc(id).update(data).then(() => {
+    hideAddProductForm();
+    renderShopProducts();
+  }).catch(err => {
+    alert("Gagal menyimpan perubahan: " + err.message);
+  });
 }
 function deleteProduct(id) {
   if (confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
@@ -494,6 +497,7 @@ function deleteProduct(id) {
       });
   }
 }
+
 
 window.onclick = function(event) {
   const modals = document.querySelectorAll('.modal');
@@ -510,6 +514,10 @@ window.onclick = function(event) {
 
 
 // Initialize Firebase services
+
+function showAdminPanel() {
+  showPage('admin');
+}
 let currentUser = null;
 
 function loginUser(email, password) {
@@ -596,9 +604,13 @@ function checkAdminStatus(uid) {
       
       console.log('Role:', role);
 
-      const adminBtn = document.getElementById('adminMenuBtn');
-      if (adminBtn) {
-        adminBtn.style.display = isAdmin ? 'block' : 'none';
+      const adminFab = document.getElementById('adminFabBtn');
+if (adminFab) {
+  adminFab.style.display = isAdmin ? 'block' : 'none';
+}
+      if (role === 'admin') {
+        isAdmin = true;
+        renderAdminMemberList();
       }
     } else {
       isAdmin = false;

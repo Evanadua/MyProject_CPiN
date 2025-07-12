@@ -101,9 +101,9 @@ document.addEventListener("DOMContentLoaded", function () {
   </div>
   
 <div id="adminMemberList"></div>
- <!-- Harus ada -->
-  <button class="btn" id="adminMenuBtn" style="display:none;margin:8px 0;">Admin Panel</button>
-  
+ <!-- Harus ada 
+   <button class="btn" id="adminMenuBtn" style="display:none;margin:8px 0;">Admin Panel</button> 
+  -->
   <!-- Auth Modal -->
   <div class="modal" id="authModal" style="display:none;">
     <div class="modal-content" style="max-width:400px;">
@@ -141,9 +141,11 @@ document.addEventListener("DOMContentLoaded", function () {
   </div>
 
   <!-- Floating Action Button -->
-  <div class="fab" onclick="alert('Menu feature coming soon!')">
-    <i class="fa fa-bars"></i>
-  </div>
+ <div class="fab" id="adminFabBtn" onclick="showAdminPanel()" title="Admin Panel">
+  <i class="fa fa-cog"></i>
+  <span class="fab-label">Admin</span>
+</div>
+
 
   <!-- Bottom Navigation -->
   <div class="bottom-nav">
@@ -181,8 +183,75 @@ document.addEventListener("DOMContentLoaded", function () {
       <div id="mySitesList"></div>
     </div>
   </div>
+<div class="modal" id="groupModal" style="display:none;">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('groupModal')">&times;</span>
+      <h3>Group Chat</h3>
+      <div id="groupChatList"></div>
+      <button class="btn" onclick="openGroupChat()">Buka Group Chat</button>
+    </div>
+  </div>
   <div class="main-content">
-  <div id="shopProducts"></div> <!-- Ini perlu agar renderShopProducts bekerja -->
+  <div id="adminPanel" style="display:none;">
+    <h2>Admin Panel</h2>
+    <div class="btn-row">
+      <button class="btn" onclick="showAddProductForm()">Tambah Produk</button>
+      <button class="btn" onclick="showManualProductForm()">Tambah Produk Manual</button>
+      <button class="btn" onclick="showMyProfile()">My Profile</button>
+      <button class="btn" onclick="showServices()">Layanan Kami</button>
+      <button class="btn" onclick="showMySites()">My Sites</button>
+      <button class="btn" onclick="showShop()">Shop</button>
+    </div>
+    <div id="adminShopBtns" class="admin-panel" style="margin-bottom:16px;"></div>
+    <div id="shopProducts"></div> <!-- Ini perlu agar renderShopProducts bekerja -->
+  <!-- Tempat form tambah produk -->
+     <div id="addProductManualForm" style="display:none; margin-top: 20px;"></div>
+    <div id="addProductForm" style="display:none;">
+    <h3>Tambah Produk</h3>
+    <input id="productName" placeholder="Nama Produk" style="width:100%;margin-bottom:8px;" type="text"/>
+    <input id="productPrice" placeholder="Harga" style="width:100%;margin-bottom:8px;" type="number"/>
+    <textarea id="productDescription" placeholder="Deskripsi Produk" style="width:100%;margin-bottom:8px;"></textarea>
+    <input id="productImageUrl" placeholder="URL Gambar Produk" style="width:100%;margin-bottom:8px;" type="text"/>
+    <button class="btn" onclick="addProduct()">Tambah Produk</button>
+  </div>
+  <div id="myProfileContent" style="display:none;">
+    <h2>My Profile</h2>
+    <div id="profileDetails"></div>
+    <button class="btn" onclick="openMyProfileModal()">Edit Profile</button>
+    <button class="btn" onclick="openChangePwdModal()">Ganti Password</button>
+    <button class="btn" onclick="logout()">Logout</button>
+  </div>
+  <div id="servicesContent" style="display:none;">
+    <h2>Layanan Kami</h2>
+    <div id="servicesList"></div>
+    <button class="btn" onclick="loadMoreServices()">Lihat Semua Layanan</button>
+  </div>
+  <div id="mySitesContent" style="display:none;">
+    <h2>My Sites</h2>
+    <div id="mySitesList"></div>
+  </div>
+  <div id="shopContent" style="display:none;">
+    <h2>Shop</h2>
+    <div id="shopProductsList"></div>
+    <button class="btn" onclick="loadMoreProducts()">Lihat Semua Produk</button>
+    </div>
+  <div id="homeContent">
+    <h2>Selamat Datang di ConsPIndo</h2>
+    <p>Consortium Pioneers Indonesia adalah komunitas inovator dan pengusaha yang berfokus pada pengembangan teknologi dan bisnis di Indonesia.</p>
+    <div id="servicesList"></div>
+    <button class="btn" onclick="loadMoreServices()">Lihat Semua Layanan</button>
+    <div id="blogList"></div>
+    <button class="btn" onclick="loadMoreBlogPosts()">Lihat Semua Blog</button>
+  </div>
+  <div id="blogContent" style="display:none;">
+    <h2>Blog</h2>
+    <div id="blogPosts"></div>
+    <button class="btn" onclick="loadMoreBlogPosts()">Load More</button>
+  </div>
+  <div id="scheduleContent" style="display:none;">
+    <h2>Jadwal Kegiatan</h2>
+    <div id="calendar"></div>
+  </div>
   <div id="pageContent"></div>
   </div>
 </div>
