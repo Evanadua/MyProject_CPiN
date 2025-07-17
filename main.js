@@ -513,11 +513,36 @@ window.onclick = function(event) {
 // [Sudah termuat sebelumnya di dokumen ini, tidak digandakan agar tidak duplikat]
 
 
-// Initialize Firebase services
-
 function showAdminPanel() {
+  if (!isAdmin()) {
+    showMessage('Akses ditolak. Hanya admin yang bisa membuka panel ini.');
+    return;
+  }
+
   showPage('admin');
+
+  const memberListContainer = document.getElementById('adminMemberList');
+  if (memberListContainer) {
+    memberListContainer.innerHTML = `
+      <button class="btn" onclick="renderAdminMemberList()">Refresh Member List</button>
+      <div id="memberTableContent"></div>
+    `;
+  }
 }
+
+
+  // Tampilkan tombol untuk memanggil MemberList
+  const memberListContainer = document.getElementById('adminMemberList');
+  if (memberListContainer) {
+    memberListContainer.innerHTML = `
+      <button class="btn" onclick="renderAdminMemberList()">Refresh Member List</button>
+      <div id="memberTableContent"></div>
+    `;
+  }
+}
+
+// Inisialisasi Firebase
+let isAdmin = true; 
 let currentUser = null;
 
 function loginUser(email, password) {
@@ -525,7 +550,19 @@ function loginUser(email, password) {
     .then((result) => {
       currentUser = result.user;
       updateLastLogin(currentUser.uid);
-      checkAdminStatus(currentUser.uid);
+      return firestore.collection('users').doc(currentUser.uid).get();
+    })
+    .then((doc) => {
+      if (doc.exists) {
+        const role = doc.data().role || 'member';
+        localStorage.setItem('isAdmin', role === 'admin' ? '1' : '0');
+        localStorage.setItem('userRole', role);
+        checkAdminFabVisibility(role); // Tampilkan FAB jika admin
+      } else {
+        localStorage.setItem('isAdmin', '0');
+        localStorage.setItem('userRole', 'member');
+      }
+
       showMessage('Login berhasil', true);
       closeModal('authModal');
       showPage('home');
@@ -534,7 +571,20 @@ function loginUser(email, password) {
       showMessage('Login gagal: ' + error.message);
     });
 }
-
+function checkAdminFabVisibility(role) {
+  const adminFab = document.getElementById('adminFabBtn');
+  if (adminFab) {
+    adminFab.style.display = (role === 'admin') ? 'flex' : 'none';
+  }
+}
+function isAdmin() {
+  return localStorage.getItem('isAdmin') === '1';
+}
+function showMessage(message, isSuccess = false) {
+function switchToLogin() {
+  document.getElementById('loginForm').style.display = 'block';
+  document.getElementById('registerForm').style.display = 'none';
+}
 function registerUser(email, password) {
   auth.createUserWithEmailAndPassword(email, password)
     .then((result) => {
@@ -600,18 +650,15 @@ function checkAdminStatus(uid) {
   firestore.collection('users').doc(uid).get().then((doc) => {
     if (doc.exists) {
       const role = doc.data().role;
-      localStorage.setItem('isAdmin', role === 'admin' ? '1' : '0');
-      
+      isAdmin = role === 'admin';
+      localStorage.setItem('isAdmin', isAdmin ? '1' : '0');
       console.log('Role:', role);
 
       const adminFab = document.getElementById('adminFabBtn');
-if (adminFab) {
-  adminFab.style.display = isAdmin ? 'block' : 'none';
-}
-      if (role === 'admin') {
-        isAdmin = true;
-        renderAdminMemberList();
+      if (adminFab) {
+        adminFab.style.display = isAdmin ? 'flex' : 'none';
       }
+
     } else {
       isAdmin = false;
     }
@@ -624,10 +671,10 @@ if (adminFab) {
 
 
 function renderAdminMemberList() {
-  if (!isAdmin) {
-    document.getElementById('adminMemberList').innerHTML = '<p>Access denied. Admin privileges required.</p>';
-    return;
-  }
+  if (!isAdmin) return;
+
+  const container = document.getElementById('memberTableContent');
+  if (!container) return;
 
   firestore.collection('users').get().then((snapshot) => {
     let html = '<div class="member-list">';
@@ -652,7 +699,7 @@ function renderAdminMemberList() {
         </div>`;
     });
     html += '</div>';
-    document.getElementById('adminMemberList').innerHTML = html;
+    container.innerHTML = html;
   });
 }
 
@@ -760,13 +807,21 @@ function closeModal(id) {
   if (el) el.style.display = 'none';
 }
 
+
 auth.onAuthStateChanged((user) => {
   if (user) {
     currentUser = user;
-    checkAdminStatus(user.uid);
     updateLastLogin(user.uid);
-    closeModal('authModal');
-    showPage('home');
+    firestore.collection('users').doc(user.uid).get().then((doc) => {
+      if (doc.exists) {
+        const role = doc.data().role || 'member';
+        localStorage.setItem('isAdmin', role === 'admin' ? '1' : '0');
+        localStorage.setItem('userRole', role);
+        checkAdminFabVisibility(role);
+      }
+      closeModal('authModal');
+      showPage('home');
+    });
   } else {
     currentUser = null;
     isAdmin = false;
@@ -1114,16 +1169,6 @@ function deleteMember(uid) {
   });
 }
 
-function openModal(id) {
-  const el = document.getElementById(id);
-  if (el) el.style.display = 'flex';
-}
-
-function closeModal(id) {
-  const el = document.getElementById(id);
-  if (el) el.style.display = 'none';
-}
-
 // =========================
 // ✅ END: Member List Modal
 // =========================
@@ -1431,9 +1476,7 @@ function openModal(eventModal = null) {
     // Setup event handlers
     setupEventHandlers();
     
-    // Let Firebase Auth State Observer handle authentication
-    // The auth state observer will show the appropriate content
-function setupEventHandlers() {
+    function setupEventHandlers() {
   const tabIds = [
     { id: 'homeTab', page: 'home' },
     { id: 'scheduleTab', page: 'schedule' },
@@ -1524,6 +1567,20 @@ if (adminMenuBtn) {
 }
 
 // Additional placeholder functions (to be implemented)
+
+function showAuthModal(showRegister = false) {
+  const authModal = document.getElementById('authModal');
+  if (!authModal) return;
+  authModal.style.display = 'block';
+  document.getElementById('authForm').reset();
+  if (showRegister) {
+    document.getElementById('authTitle').innerText = 'Register';
+    document.getElementById('authSubmit').innerText = 'Register';
+  } else {
+    document.getElementById('authTitle').innerText = 'Login';
+    document.getElementById('authSubmit').innerText = 'Login';
+  }
+}
 
 function showAuthPage(showRegister = false) {
   showAuthModal(showRegister);
@@ -1692,10 +1749,20 @@ function showArticleForm() {
   document.getElementById('articleForm').style.display = 'block';
   document.getElementById('addArticleButton').style.display = 'none';
 }
+  // ✅ Pastikan Quill sudah diinisialisasi
+  if (!window.quill) {
+    const quillContainer = document.getElementById('editor');
+    if (quillContainer) {
+      window.quill = new Quill(quillContainer, { theme: 'snow' });
+    } else {
+      console.error('Elemen editor tidak ditemukan!');
+      return;
+    }
   // ✅ Inisialisasi ulang Quill hanya jika belum ada
   if (!window.quill && document.getElementById('editor')) {
     window.quill = new Quill('#editor', { theme: 'snow' });
   }
+}
 
 function hideArticleForm() {
   document.getElementById('articleForm').style.display = 'none';

@@ -143,7 +143,26 @@ document.addEventListener("DOMContentLoaded", function () {
   <!-- Floating Action Button -->
  <div class="fab" id="adminFabBtn" onclick="showAdminPanel()" title="Admin Panel">
   <i class="fa fa-cog"></i>
-  <span class="fab-label">Admin</span>
+</div>
+
+  <!-- Bottom Navigation -->
+  <div class="bottom-nav">
+    <a class="nav-item active" href="#" id="homeMenu">
+      <i class="fa fa-home"></i>
+      <span>Home</span>
+    </a>
+    <a class="nav-item" href="#" id="scheduleMenu">
+      <i class="fa fa-calendar"></i>
+      <span>Schedule</span>
+    </a>
+    <a class="nav-item" href="#" id="servicesMenu">
+      <i class="fa fa-cogs"></i>
+      <span>Services</span>
+    </a>
+    <a class="nav-item" href="#" id="blogMenu">
+      <i class="fa fa-newspaper"></i>
+      <span>Blog</span>
+    </a>
 </div>
 
 
@@ -329,7 +348,22 @@ document.addEventListener("DOMContentLoaded", function () {
     <button onclick="saveEvent()">Simpan</button>
   </div>
 </div>
-
+<div id="eventModal">
+  <input type="hidden" id="eventId">
+  <input type="text" id="eventTitle">
+  <input type="datetime-local" id="eventStart">
+  <input type="datetime-local" id="eventEnd">
+  <textarea id="eventDesc"></textarea>
+  <h3 id="modalTitle">Judul Modal</h3>
+  <button id="deleteBtn">Hapus</button>
+</div>
+  <div class="modal" id="fullArticleModal" style="display:none;">
+    <div class="modal-content">
+      <span class="close" onclick="closeFullArticle()">&times;</span>
+      <h3 id="fullArticleTitle"></h3>
+      <p id="fullArticleBody"></p>
+    </div>
+  </div>
 
   <!-- Footer -->
   <div class="footer">
