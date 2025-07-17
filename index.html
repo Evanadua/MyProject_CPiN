@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", function () {
           <div class="header-title">ConsPIndo</div>
           <div class="header-desc">Consortium Pioneers Indonesia</div>
           <div class="header-info">
-            <span>1 Member</span>
+           <span id="memberCount">1 Member</span>
             &middot;
             <span>General Info</span>
           </div>
@@ -141,30 +141,9 @@ document.addEventListener("DOMContentLoaded", function () {
   </div>
 
   <!-- Floating Action Button -->
- <div class="fab" id="adminFabBtn" onclick="showAdminPanel()" title="Admin Panel">
-  <i class="fa fa-cog"></i>
-</div>
-
-  <!-- Bottom Navigation -->
-  <div class="bottom-nav">
-    <a class="nav-item active" href="#" id="homeMenu">
-      <i class="fa fa-home"></i>
-      <span>Home</span>
-    </a>
-    <a class="nav-item" href="#" id="scheduleMenu">
-      <i class="fa fa-calendar"></i>
-      <span>Schedule</span>
-    </a>
-    <a class="nav-item" href="#" id="servicesMenu">
-      <i class="fa fa-cogs"></i>
-      <span>Services</span>
-    </a>
-    <a class="nav-item" href="#" id="blogMenu">
-      <i class="fa fa-newspaper"></i>
-      <span>Blog</span>
-    </a>
-</div>
-
+  <div class="fab" id="adminFabBtn" style="display: none;" onclick="showAdminPanel()">
+    <i class="fa fa-cog"></i>
+  </div>
 
   <!-- Bottom Navigation -->
   <div class="bottom-nav">
@@ -208,6 +187,7 @@ document.addEventListener("DOMContentLoaded", function () {
       <h3>Group Chat</h3>
       <div id="groupChatList"></div>
       <button class="btn" onclick="openGroupChat()">Buka Group Chat</button>
+      <span class="chat-username" id="groupChatUsername"></span>
     </div>
   </div>
   <div class="main-content">
@@ -220,6 +200,7 @@ document.addEventListener("DOMContentLoaded", function () {
       <button class="btn" onclick="showServices()">Layanan Kami</button>
       <button class="btn" onclick="showMySites()">My Sites</button>
       <button class="btn" onclick="showShop()">Shop</button>
+      <button class="btn btn-danger" onclick="resetAllMembers()">Reset All Members</button>
     </div>
     <div id="adminShopBtns" class="admin-panel" style="margin-bottom:16px;"></div>
     <div id="shopProducts"></div> <!-- Ini perlu agar renderShopProducts bekerja -->
@@ -233,6 +214,7 @@ document.addEventListener("DOMContentLoaded", function () {
     <input id="productImageUrl" placeholder="URL Gambar Produk" style="width:100%;margin-bottom:8px;" type="text"/>
     <button class="btn" onclick="addProduct()">Tambah Produk</button>
   </div>
+  <!--
   <div id="myProfileContent" style="display:none;">
     <h2>My Profile</h2>
     <div id="profileDetails"></div>
@@ -240,6 +222,52 @@ document.addEventListener("DOMContentLoaded", function () {
     <button class="btn" onclick="openChangePwdModal()">Ganti Password</button>
     <button class="btn" onclick="logout()">Logout</button>
   </div>
+   <div class="modal" id="myProfileEditContainer" style="display:none;">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('myProfileEditModal')">&times;</span>
+      <h3>Edit Profile</h3>
+      <input id="editProfileName" placeholder="Nama Lengkap" style="width:100%;margin-bottom:8px;" type="text"/>
+      <input id="editProfileEmail" placeholder="Email" style="width:100%;margin-bottom:8px;" type="email"/>
+      <button class="btn" onclick="saveProfileChanges()">Simpan Perubahan</button>
+    </div>
+  </div>
+-->
+  <div id="profileSection" style="max-width:400px;margin:auto;">
+  <h2>Profil Saya</h2>
+
+  <div style="text-align:center;margin-bottom:10px;">
+    <img id="profilePhoto" src="" alt="Foto Profil" width="100" height="100" style="border-radius:50%;border:1px solid #ccc;"><br>
+    
+    <label for="profilePhotoInputLocal" style="display:inline-block;margin-top:6px;">
+      Ganti Foto Profil:
+    </label><br>
+    <input type="file" id="profilePhotoInputLocal" accept="image/*">
+  </div>
+
+  <div class="form-group">
+    <label for="profileUsername">Nama Pengguna</label>
+    <input type="text" id="profileUsername" class="form-control" placeholder="Nama pengguna">
+  </div>
+
+  <div class="form-group">
+    <label for="profileEmail">Email</label>
+    <input type="email" id="profileEmail" class="form-control" placeholder="Email">
+  </div>
+
+  <div class="form-group">
+    <label for="profilePhone">Nomor HP</label>
+    <input type="tel" id="profilePhone" class="form-control" placeholder="Nomor Telepon">
+  </div>
+
+  <div style="margin-top:10px;text-align:right;">
+    <button class="btn" onclick="saveProfile()">Simpan Profil</button>
+    <button class="btn btn-danger" onclick="logoutUser()">Logout</button>
+  </div>
+
+  <div id="authError" style="display:none;margin-top:10px;"></div>
+</div>
+
+  
   <div id="servicesContent" style="display:none;">
     <h2>Layanan Kami</h2>
     <div id="servicesList"></div>
@@ -274,14 +302,6 @@ document.addEventListener("DOMContentLoaded", function () {
   <div id="pageContent"></div>
   </div>
 </div>
-  <div class="modal" id="myProfileModal" style="display:none;">
-    <div class="modal-content">
-      <span class="close" onclick="closeModal('myProfileModal')">&times;</span>
-      <h3>My Profile</h3>
-      <div id="profileInfo"></div>
-      <button class="btn" onclick="openChangePwdModal()">Ganti Password</button>
-    </div>
-  </div>
   <div class="modal" id="shopModal" style="display:none;">
     <div class="modal-content">
       <span class="close" onclick="closeModal('shopModal')">&times;</span>
@@ -314,16 +334,19 @@ document.addEventListener("DOMContentLoaded", function () {
     <!-- Konten akan dimuat dari JS -->
   </div>
 </div>
+<!-- === GROUP SECTION WITH CHAT === -->
+<div id="groupList"></div>
 
-  <div class="modal" id="groupChatModal" style="display:none;">
-    <div class="modal-content" style="max-width:400px;">
-      <span class="close" onclick="closeModal('groupChatModal')">&times;</span>
-      <h3 id="groupChatTitle">Group Chat</h3>
-      <div id="groupChatMessages" style="height:180px;overflow:auto;border:1px solid #eee;padding:8px 6px 8px 6px;margin-bottom:10px;background:#f9f9f9;border-radius:6px;"></div>
-      <input id="groupChatInput" placeholder="Ketik pesan..." style="width:70%;" type="text"/>
-      <button class="btn" onclick="sendGroupChat()">Kirim</button>
-    </div>
+<!-- === GROUP CHAT MODAL === -->
+<div class="modal" id="groupChatModal" style="display:none;">
+  <div class="modal-content" style="max-width:400px;">
+    <span class="close" onclick="closeModal('groupChatModal')">&times;</span>
+    <h3 id="groupChatTitle">Group Chat</h3>
+    <div id="groupChatMessages" style="height:180px;overflow:auto;border:1px solid #eee;padding:8px 6px 8px 6px;margin-bottom:10px;background:#f9f9f9;border-radius:6px;"></div>
+    <input id="groupChatInput" placeholder="Ketik pesan..." style="width:70%;" type="text"/>
+    <button class="btn" onclick="sendGroupChat()">Kirim</button>
   </div>
+</div>
 
   <div class="modal" id="changePwdModal" style="display:none;">
     <div class="modal-content" style="max-width:350px;">
@@ -335,28 +358,40 @@ document.addEventListener("DOMContentLoaded", function () {
       <button class="btn" onclick="changeAdminPassword()">Simpan</button>
     </div>
   </div>
-
-  
-<div id="eventModal" class="modal" style="display: none;">
+  <!-- === EVENT ADD MODAL === -->
+<div class="modal" id="eventAddModal" style="display: none;">
   <div class="modal-content">
-    <span class="close" onclick="closeModal('eventModal')">&times;</span>
-    <h3>Tambah/Edit Event</h3>
-    <input id="eventTitle" placeholder="Judul Event">
-    <input id="eventStart" type="datetime-local">
-    <input id="eventEnd" type="datetime-local">
-    <textarea id="eventDescription" placeholder="Deskripsi"></textarea>
-    <button onclick="saveEvent()">Simpan</button>
+    <span class="close" onclick="closeModal('eventAddModal')">&times;</span>
+    <h3 id="modalTitleAdd">Tambah Event</h3>
+    <input type="hidden" id="eventAddId">
+    <input type="text" id="eventAddTitle" placeholder="Judul Event">
+    <input type="datetime-local" id="eventAddStart">
+    <input type="datetime-local" id="eventAddEnd">
+    <textarea id="eventAddDesc" placeholder="Deskripsi"></textarea>
+    <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+      <button id="eventAddSaveBtn" onclick="saveNewEvent()">Simpan</button>
+      <button onclick="closeModal('eventAddModal')">Batal</button>
+    </div>
   </div>
 </div>
-<div id="eventModal">
-  <input type="hidden" id="eventId">
-  <input type="text" id="eventTitle">
-  <input type="datetime-local" id="eventStart">
-  <input type="datetime-local" id="eventEnd">
-  <textarea id="eventDesc"></textarea>
-  <h3 id="modalTitle">Judul Modal</h3>
-  <button id="deleteBtn">Hapus</button>
+<!-- === EVENT EDIT MODAL === -->
+<div class="modal" id="eventEditModal" style="display: none;">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal('eventEditModal')">&times;</span>
+    <h3 id="modalTitleEdit">Edit Event</h3>
+    <input type="hidden" id="eventEditId">
+    <input type="text" id="eventEditTitle" placeholder="Judul Event">
+    <input type="datetime-local" id="eventEditStart">
+    <input type="datetime-local" id="eventEditEnd">
+    <textarea id="eventEditDesc" placeholder="Deskripsi"></textarea>
+    <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+      <button id="eventEditSaveBtn" onclick="saveEventEdit()">Simpan</button>
+      <button id="eventEditDeleteBtn" onclick="deleteEvent()">Hapus</button>
+    </div>
+  </div>
 </div>
+
+
   <div class="modal" id="fullArticleModal" style="display:none;">
     <div class="modal-content">
       <span class="close" onclick="closeFullArticle()">&times;</span>
@@ -365,6 +400,7 @@ document.addEventListener("DOMContentLoaded", function () {
     </div>
   </div>
 
+  
   <!-- Footer -->
   <div class="footer">
     &copy; 2025 ConsPIndo. All rights reserved.<br/>
@@ -373,7 +409,7 @@ document.addEventListener("DOMContentLoaded", function () {
   </div>
 
   <script src="main.js"></script>
-
+ 
   <style>
   .btn-row {
     display: flex;

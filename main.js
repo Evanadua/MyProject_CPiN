@@ -131,7 +131,7 @@ function addToCart(productId) {
   });
 }
 
-function renderShopProducts() {
+function renderShopProducts(filterLocation = '') {
   showAdminShopBtns();
   const container = document.getElementById('shopProducts');
   if (!container) return;
@@ -143,11 +143,15 @@ function renderShopProducts() {
     snapshot.forEach(doc => {
       const prod = doc.data();
       const id = doc.id;
+       // Filter lokasi (case-insensitive)
+      if (filterLocation && (!prod.location || !prod.location.toLowerCase().includes(filterLocation.toLowerCase()))) {
+        return; // skip produk yang tidak cocok
+      }
       const div = document.createElement('div');
       div.className = 'shop-tile';
       div.innerHTML = `
         ${renderProductImage(prod.img, prod.name)}
-        <div class="prod-id">ID: ${id}</div>
+        <!-- <div class="prod-id">ID: ${id}</div> -->
         <div class="prod-name">${prod.name}</div>
         <div class="prod-price">${formatCurrency(prod.price, prod.currency || 'IDR')}</div>
         <div class="prod-stock">Stok: ${prod.stock}</div>
@@ -226,11 +230,23 @@ function showAddProductForm(editId = null) {
     renderProductForm(formDiv);
   }
 }
+function filterShopByLocation() {
+  const input = document.getElementById('filterLocation');
+  const value = input ? input.value.trim() : '';
+  renderShopProducts(value);
+}
+
+function resetShopFilter() {
+  const input = document.getElementById('filterLocation');
+  if (input) input.value = '';
+  renderShopProducts();
+}
 
 function renderProductForm(container, id = null, prod = { name: '', price: '', currency: 'IDR', stock: 1, desc: '', img: '' }) {
   container.innerHTML = `
     <input type="text" id="prodName" placeholder="Nama Produk" value="${prod.name}">
     <input type="number" id="prodPrice" placeholder="Harga" value="${prod.price}">
+    <input type="text" id="prod-location" placeholder="Lokasi Produk" value="${prod.location}">
     <select id="prodCurrency">
       <option value="IDR" ${prod.currency === 'IDR' ? 'selected' : ''}>IDR</option>
       <option value="USD" ${prod.currency === 'USD' ? 'selected' : ''}>USD</option>
@@ -511,7 +527,12 @@ window.onclick = function(event) {
 
 // Product Form Functions (renderProductForm, showAddProductForm, saveNewProduct, saveEditProduct, hideAddProductForm)
 // [Sudah termuat sebelumnya di dokumen ini, tidak digandakan agar tidak duplikat]
-
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
 
 function showAdminPanel() {
   if (!isAdmin()) {
@@ -521,29 +542,19 @@ function showAdminPanel() {
 
   showPage('admin');
 
-  const memberListContainer = document.getElementById('adminMemberList');
+  const memberListContainer = document.getElementById('adminMemberList'); 
   if (memberListContainer) {
-    memberListContainer.innerHTML = `
-      <button class="btn" onclick="renderAdminMemberList()">Refresh Member List</button>
-      <div id="memberTableContent"></div>
-    `;
+    showPage('admin');
   }
 }
-
-
-  // Tampilkan tombol untuk memanggil MemberList
-  const memberListContainer = document.getElementById('adminMemberList');
-  if (memberListContainer) {
-    memberListContainer.innerHTML = `
-      <button class="btn" onclick="renderAdminMemberList()">Refresh Member List</button>
-      <div id="memberTableContent"></div>
-    `;
-  }
-}
-
-// Inisialisasi Firebase
-let isAdmin = true; 
 let currentUser = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const adminFab = document.getElementById('adminFabBtn');
+  if (adminFab) {
+    adminFab.onclick = showAdminPanel;
+  }
+});
 
 function loginUser(email, password) {
   auth.signInWithEmailAndPassword(email, password)
@@ -581,6 +592,13 @@ function isAdmin() {
   return localStorage.getItem('isAdmin') === '1';
 }
 function showMessage(message, isSuccess = false) {
+  const messageBox = document.getElementById('messageBox');
+  if (messageBox) {
+    messageBox.textContent = message;
+    messageBox.style.color = isSuccess ? 'green' : 'red';
+    messageBox.style.display = 'block';
+  }
+}
 function switchToLogin() {
   document.getElementById('loginForm').style.display = 'block';
   document.getElementById('registerForm').style.display = 'none';
@@ -590,6 +608,7 @@ function registerUser(email, password) {
     .then((result) => {
       currentUser = result.user;
       saveUserToDatabase(currentUser.uid, email);
+      updateMemberCount(); // ✅ Tambahkan ini agar jumlah member langsung terupdate
       showMessage('Pendaftaran berhasil. Silakan login.', true);
       switchToLogin();
     })
@@ -645,35 +664,33 @@ function detectBrowser(userAgent) {
   if (userAgent.includes("Edge")) return "Edge";
   return "Unknown Browser";
 }
-
 function checkAdminStatus(uid) {
   firestore.collection('users').doc(uid).get().then((doc) => {
     if (doc.exists) {
       const role = doc.data().role;
-      isAdmin = role === 'admin';
-      localStorage.setItem('isAdmin', isAdmin ? '1' : '0');
+      localStorage.setItem('isAdmin', role === 'admin' ? '1' : '0');
       console.log('Role:', role);
 
       const adminFab = document.getElementById('adminFabBtn');
       if (adminFab) {
-        adminFab.style.display = isAdmin ? 'flex' : 'none';
+        adminFab.style.display = (role === 'admin') ? 'flex' : 'none';
       }
-
     } else {
-      isAdmin = false;
+      localStorage.setItem('isAdmin', '0');
     }
   }).catch((err) => {
     console.error("Gagal cek admin:", err);
-    isAdmin = false;
+    localStorage.setItem('isAdmin', '0');
   });
 }
 
-
-
 function renderAdminMemberList() {
-  if (!isAdmin) return;
+  if (!isAdmin()) {
+    document.getElementById('adminMemberList').innerHTML = '<p>Access denied. Admin privileges required.</p>';
+    return;
+  }
 
-  const container = document.getElementById('memberTableContent');
+  const container = document.getElementById('adminMemberList');
   if (!container) return;
 
   firestore.collection('users').get().then((snapshot) => {
@@ -721,74 +738,206 @@ function deleteMember(uid) {
       });
   }
 }
-
-
-
-// Function to change profile photo
-function changeProfilePhoto(event) {
-  const file = event.target.files[0];
-  if (!file || !currentUser) return;
-
-  const storageRef = storage.ref(`avatars/${currentUser.uid}`);
-  storageRef.put(file).then(snapshot => {
-    return snapshot.ref.getDownloadURL();
-  }).then(url => {
-    document.getElementById('profilePhoto').src = url;
-    firestore.collection('users').doc(currentUser.uid).update({ photoUrl: url });
-    showMessage('Foto profil diperbarui', true);
-  }).catch(error => {
-    showMessage('Upload gagal: ' + error.message);
+function updateMemberCount() {
+  firestore.collection('users').get().then(snapshot => {
+    const count = snapshot.size;
+    const memberCountEl = document.getElementById('memberCount');
+    if (memberCountEl) {
+      memberCountEl.textContent = `${count} Member`;
+    }
   });
 }
+
+function listenMemberCount() {
+  firestore.collection('users').onSnapshot(snapshot => {
+    const count = snapshot.size;
+    const memberCountEl = document.getElementById('memberCount');
+    if (memberCountEl) {
+      memberCountEl.textContent = `${count} Member`;
+    }
+  });
+}
+// Panggil saat halaman dimuat
+document.addEventListener('DOMContentLoaded', () => {
+  listenMemberCount();
+});
+
+function resetAllMembers() {
+  if (!isAdmin()) {
+    alert('Hanya Master Admin yang bisa reset semua member!');
+    return;
+  }
+  if (!confirm('Yakin ingin menghapus SEMUA member?')) return;
+  firestore.collection('users').get().then(snapshot => {
+    const batch = firestore.batch();
+    snapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    batch.commit().then(() => {
+      alert('Semua member telah dihapus!');
+      renderAdminMemberList();
+      updateMemberCount();
+    });
+  });
+}
+
+function showProfileData() {
+  if (!currentUser) return;
+  firestore.collection('users').doc(currentUser.uid).get().then(doc => {
+    if (!doc.exists) return;
+    const data = doc.data();
+    const photoEl = document.getElementById('profilePhoto');
+    if (photoEl) photoEl.src = localStorage.getItem('localProfilePhoto') || data.photoUrl || getDefaultAvatarSVG();
+    document.getElementById('profileUsername').value = data.username || '';
+    document.getElementById('profileEmail').value = data.email || '';
+    document.getElementById('profilePhone').value = data.phone || '';
+  });
+}
+
+function uploadProfilePhotoLocal() {
+  const input = document.getElementById('profilePhotoInputLocal');
+  if (!input || !input.files[0]) return;
+
+  const file = input.files[0];
+  const reader = new FileReader();
+
+  reader.onload = function (e) {
+    const photoDataUrl = e.target.result;
+    localStorage.setItem('localProfilePhoto', photoDataUrl);
+    const img = document.getElementById('profilePhoto');
+    if (img) img.src = photoDataUrl;
+    showMessage('Foto profil disimpan di perangkat ini.', true);
+  };
+
+  reader.readAsDataURL(file);
+}
+function handleProfilePhotoUpload(callback) {
+  const input = document.getElementById('profilePhotoInputLocal');
+  if (!input || !input.files[0]) return callback('');
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const photoDataUrl = e.target.result;
+    localStorage.setItem('localProfilePhoto', photoDataUrl);
+    const img = document.getElementById('profilePhoto');
+    if (img) img.src = photoDataUrl;
+    if (window.currentUser && window.firebase) {
+      const uid = currentUser.uid;
+      const storageRef = firebase.storage().ref();
+      const photoRef = storageRef.child(`profile_photos/${uid}.jpg`);
+      photoRef.put(file).then(snapshot => {
+        snapshot.ref.getDownloadURL().then((url) => {
+          callback(url);
+        });
+      }).catch(err => {
+        console.error("Gagal upload foto ke Storage:", err);
+        callback(photoDataUrl);
+      });
+    } else {
+      callback(photoDataUrl);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+// === PROFILE FUNCTIONS ===
 function saveProfile() {
-  if (!currentProfile) return;
-  const profile = document.getElementById('profileUsername').value.trim();
-  const email = document.getElementById('profileEmail').value;
-  const phone = document.getElementById('profilePhone').value;
-  const username = document.getElementById('profileUsername').value;
-  
-  firestore.collection('users').doc(currentUser.uid).update({
-    email: email,
-    phone: phone,
-    username: username
-  })
-  .then(() => {
-    showMessage('Profil berhasil disimpan', true);
-  })
-  .catch((err) => {
-    showMessage('Gagal menyimpan profil: ' + err.message);
+  if (!currentUser) {
+    alert("Anda belum login.");
+    return;
+  }
+  const username = document.getElementById('profileUsername').value.trim();
+  const email = document.getElementById('profileEmail').value.trim();
+  const phone = document.getElementById('profilePhone').value.trim();
+  if (!username || !email) {
+    alert("Nama dan Email wajib diisi!");
+    return;
+  }
+  handleProfilePhotoUpload(function(photoUrl) {
+    firebase.firestore().collection('users').doc(currentUser.uid).set({
+      username,
+      email,
+      phone,
+      photoUrl
+    }, { merge: true })
+    .then(() => {
+      alert("Profil berhasil disimpan!");
+      document.getElementById('profilePhoto').src = photoUrl;
+      showProfileData();
+    })
+    .catch((err) => {
+      alert("Gagal menyimpan profil: " + err.message);
+    });
   });
 }
 
-// Function to show profile data
-function showMessage(msg, success = false) {
-  const el = document.getElementById('authError');
-  if (el) {
-    el.innerText = msg;
-    el.className = success ? 'auth-success' : '';
-    el.style.display = 'block'; // <-- tambahkan baris ini
-  } 
-    alert(msg);
-}
-
-function switchToRegister() {
-  document.getElementById('loginForm').style.display = 'none';
-  document.getElementById('registerForm').style.display = 'block';
-}
-
-function switchToLogin() {
-  document.getElementById('loginForm').style.display = 'block';
-  document.getElementById('registerForm').style.display = 'none';
-}
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('profilePhotoInputLocal');
+  if (input) {
+    input.addEventListener('change', function() {
+      handleProfilePhotoUpload(function(url){});
+    });
+  }
+  showProfileData();
+});
 
 function logoutUser() {
   auth.signOut().then(() => {
     currentUser = null;
-    isAdmin = false;
+    localStorage.setItem('isAdmin', '0'); // Reset status admin di localStorage
     showAuthModal(false);
     showPage('home');
   });
 }
+
+function closeMyProfileModal() {
+  document.getElementById('myProfileModal').style.display = 'none';
+} 
+
+function enableProfileEdit() {
+  document.getElementById('profileUsername').removeAttribute('readonly');
+  document.getElementById('profileEmail').removeAttribute('readonly');
+  document.getElementById('profilePhone').removeAttribute('readonly');
+}
+
+function deleteProfile() {
+  if (!currentUser) return;
+  if (!confirm('Yakin ingin menghapus profil Anda?')) return;
+  firestore.collection('users').doc(currentUser.uid).delete().then(() => {
+    alert('Profil dihapus!');
+    logoutUser();
+  });
+}
+function getDefaultAvatarSVG() {
+  return "data:image/svg+xml;base64," + btoa(`
+    <svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'>
+      <circle cx='50' cy='50' r='50' fill='#ccc'/>
+      <text x='50%' y='55%' font-size='30' text-anchor='middle' fill='#fff' dy='.3em'>?</text>
+    </svg>
+  `);
+}
+
+function renderUserPostCard() {
+    const postCard = document.getElementById('userPostCard');
+    if (!currentUser || !postCard) return;
+    firestore.collection('posts')
+        .where('uid', '==', currentUser.uid)
+        .orderBy('createdAt', 'desc')
+        .limit(1)
+        .get()
+        .then(snapshot => {
+            if (snapshot.empty) {
+                postCard.innerHTML = '<i>Belum ada postingan.</i>';
+                return;
+            }
+            const post = snapshot.docs[0].data();
+            postCard.innerHTML = `
+                <div class="post-avatar"><img src="${post.photoUrl || 'default.jpg'}" alt="User"></div>
+                <div class="post-content">${post.content || ''}</div>
+                <div class="post-date">${post.createdAt?.toDate().toLocaleString() || ''}</div>
+            `;
+        });
+}
+
 
 function showAuthModal(showRegister = false) {
   const modal = document.getElementById('authModal');
@@ -821,10 +970,11 @@ auth.onAuthStateChanged((user) => {
       }
       closeModal('authModal');
       showPage('home');
+      showProfileData(); 
     });
   } else {
     currentUser = null;
-    isAdmin = false;
+    localStorage.setItem('isAdmin', '0');
     showAuthModal(false);
   }
 });
@@ -864,7 +1014,7 @@ const pages = {
         <div class="admin-section">
             <h3>Registered Members</h3>
             <div id="adminMemberList"></div>
-            <button class="btn" onclick="refreshMemberList()" style="margin-top:12px;">Refresh Member List</button>
+           <button class="btn" onclick="refreshMemberList()" style="margin-top:12px;">Refresh Member List</button> 
             <button class="btn delete-btn" onclick="resetAllMembers()" style="margin-top:12px;">Reset All Members</button>
         </div>
         <div class="admin-section" style="margin-top:20px;">
@@ -969,6 +1119,7 @@ const pages = {
                 <div id="editor" style="height:120px;margin-bottom:10px;"></div>
                 <input type="file" id="articleImage" accept="image/*" style="margin:10px 0;">
                 <button class="btn" onclick="saveArticle()">Simpan Artikel</button>
+                <button class="btn" onclick="hideArticleForm()">Batal</button>
             </div>
         </div>
     `,
@@ -977,8 +1128,8 @@ const pages = {
         <div style="text-align:center;margin-bottom:12px;">
             <img id="profilePhoto" src="" alt="Foto Profil">
             <br>
-            <input type="file" id="profilePhotoInput" accept="image/*" style="margin-top:8px;" onchange="uploadProfilePhoto(event)"
->
+           <input type="file" id="profilePhotoInputLocal">
+
         </div>
         <div style="max-width:320px;margin:0 auto;">
             <label>Username:</label>
@@ -989,6 +1140,8 @@ const pages = {
             <input type="text" id="profilePhone" style="width:100%;margin-bottom:12px;">
             <button class="btn" onclick="saveProfile()">Simpan Profil</button>
             <button onclick="logoutUser()" class="btn delete-btn" style="margin-left:8px;">Logout</button>
+            <button class="btn" onclick="enableProfileEdit()">Edit Profil</button>
+<button class="btn delete-btn" onclick="deleteProfile()">Hapus Profil</button>
         </div>
     `,
     group: `
@@ -999,6 +1152,11 @@ const pages = {
     shop: `
         <h2>Shop / MarketPlace</h2>
         <div id="adminShopBtns"></div>
+        <div style="margin-bottom:10px;">
+  <input type="text" id="filterLocation" placeholder="Cari Lokasi Produk..." style="padding:6px; width:180px;">
+  <button class="btn" onclick="filterShopByLocation()">Filter</button>
+  <button class="btn" onclick="resetShopFilter()">Reset</button>
+</div>
         <div id="shopProducts"></div>
         <hr>
         <button onclick="showCart()">Lihat Keranjang (<span id="cartCount">0</span>)</button>
@@ -1008,13 +1166,15 @@ const pages = {
 
 
 // Function to initialize the schedule calendar
+// ✅ Function to initialize the schedule calendar
 function initScheduleCalendar() {
   const calendarEl = document.getElementById('calendar');
   if (!calendarEl) {
-  console.warn('Elemen #calendar tidak ditemukan!');
-  return;
-}
- calendarEl.innerHTML = ''; // 🔄 Clear sebelum render ulang
+    console.warn('Elemen #calendar tidak ditemukan!');
+    return;
+  }
+
+  calendarEl.innerHTML = ''; // Clear kontainer sebelum render ulang
 
   firestore.collection('events').get().then(snapshot => {
     const events = snapshot.docs.map(doc => {
@@ -1028,51 +1188,106 @@ function initScheduleCalendar() {
       };
     });
 
-    // Initialize FullCalendar
-  
-const openEventModal = (eventData = {}) => {
-  const modal = document.getElementById('eventModal');
-  if (!modal) return;
-
-  const titleInput = modal.querySelector('#eventTitle');
-  const startInput = modal.querySelector('#eventStart');
-  const endInput = modal.querySelector('#eventEnd');
-  const descInput = modal.querySelector('#eventDescription');
-
-  if (!titleInput || !startInput || !endInput || !descInput) {
-    console.warn('Input dalam #eventModal tidak lengkap!');
-    return;
-  }
-
-  titleInput.value = eventData.title || '';
-  startInput.value = eventData.start || '';
-  endInput.value = eventData.end || '';
-  descInput.value = eventData.description || '';
-
-  modal.style.display = 'block';
-};
-
+    // ✅ Inisialisasi Kalender setelah data didapat
     const calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',
       events: events,
       dateClick: function(info) {
-        openEventModal({ start: info.dateStr });
+        openEventAddModal({
+          start: info.dateStr
+        });
       },
       eventClick: function(info) {
-        openEventModal({
+        openEventEditModal({
           id: info.event.id,
           title: info.event.title,
+          titleInput: info.event.title,
           start: info.event.start.toISOString().slice(0,16),
           end: info.event.end ? info.event.end.toISOString().slice(0,16) : '',
+          deleteBtn: info.event.extendedProps?.deleteBtn || '',
           description: info.event.extendedProps?.description || ''
         });
       }
     });
 
-    calendar.render();
+    calendar.render(); // ✅ Jangan lupa render!
+  }).catch(error => {
+    console.error('Gagal mengambil data events:', error);
   });
 }
 
+
+// ✅ Buka Modal Edit Event
+function openEventEditModal(eventData = {}) {
+  if (!eventData || typeof eventData !== 'object') {
+    console.warn('Data event tidak valid!');
+    return;
+  }
+
+  const modal = document.getElementById('eventEditModal');
+  if (!modal) return;
+
+  const title = document.getElementById('modalTitleEdit');
+  const idInput = document.getElementById('eventEditId');
+  const titleInput = document.getElementById('eventEditTitle');
+  const startInput = document.getElementById('eventEditStart');
+  const endInput = document.getElementById('eventEditEnd');
+  const descInput = document.getElementById('eventEditDesc');
+  const deleteBtn = document.getElementById('eventEditDeleteBtn');
+
+  if (!title || !idInput || !titleInput || !startInput || !descInput) {
+    console.warn('Input dalam #eventEditModal tidak lengkap!');
+    return;
+  }
+
+  modal.style.display = 'flex';
+  title.innerText = 'Edit Jadwal';
+  idInput.value = eventData.id || '';
+  titleInput.value = eventData.title || '';
+  startInput.value = eventData.start || '';
+  endInput.value = eventData.end || '';
+  descInput.value = eventData.description || '';
+
+  if (eventData.end) {
+    const endDate = new Date(eventData.end);
+    const now = new Date();
+    const isPast = endDate < now;
+
+    deleteBtn.style.display = isPast ? 'inline-block' : 'none';
+    deleteBtn.disabled = !isPast;
+  } else {
+    deleteBtn.style.display = 'none';
+  }
+}
+
+function saveNewEvent() {
+  const id = document.getElementById('eventAddId').value;
+  const title = document.getElementById('eventAddTitle').value;
+  const start = document.getElementById('eventAddStart').value;
+  const end = document.getElementById('eventAddEnd').value;
+  const desc = document.getElementById('eventAddDesc').value;
+
+  if (!title || !start) {
+    alert('Judul dan tanggal mulai wajib diisi!');
+    return;
+  }
+
+  const eventData = {
+    title,
+    start: firebase.firestore.Timestamp.fromDate(new Date(start)),
+    end: end ? firebase.firestore.Timestamp.fromDate(new Date(end)) : null,
+    description
+  };
+
+  firestore.collection('events').add(eventData).then(() => {
+    closeModal('eventAddModal');
+    initScheduleCalendar(); // refresh kalender
+    alert('Jadwal berhasil disimpan!');
+  }).catch(err => {
+    console.error('Gagal menyimpan event:', err);
+    alert('Terjadi kesalahan saat menyimpan event.');
+  });
+}
 
 // Logo and Header Functions
 /*
@@ -1111,7 +1326,7 @@ function copyInviteCode() {
     });
 }
 
-// =========================
+
 // ✅ FIRESTORE: Member List Modal
 // =========================
 
@@ -1226,13 +1441,11 @@ function showPage(page) {
   setTimeout(setupEventHandlers, 100);
 }
 
-
-
 document.addEventListener('DOMContentLoaded', function() {
 
   document.getElementById('tabLogin').onclick = () => showAuthPage(false);
   document.getElementById('tabRegister').onclick = () => showAuthPage(true);
-  
+});
   document.getElementById('loginBtn').onclick = () => {
   const email = document.getElementById('loginEmail').value;
   const password = document.getElementById('loginPassword').value;
@@ -1298,7 +1511,7 @@ if (deleteBtn) {
       }
     };
   }
-});
+
 
 // Modal Functions
 
@@ -1419,6 +1632,7 @@ function setupEventHandlers() {
         return;
       }
       registerUser(email, password);
+      updateMemberCount();
 
       const tabRegister = document.getElementById('tabRegister');
 if (tabRegister) {
@@ -1428,55 +1642,109 @@ if (tabRegister) {
   }
 }
 
-function openModal(eventModal = null) {
-  const modal = document.getElementById('eventModal');
+function openEventAddModal(eventData = {}) {
+  const modal = document.getElementById('eventAddModal');
   if (!modal) return;
 
-  const title = document.getElementById('modalTitle');
-  const idInput = document.getElementById('eventId');
-  const titleInput = document.getElementById('eventTitle');
-  const startInput = document.getElementById('eventStart');
-  const endInput = document.getElementById('eventEnd');
-  const descInput = document.getElementById('eventDesc');
-  const deleteBtn = document.getElementById('deleteBtn');
+  document.getElementById('eventAddId').value = '';
+  document.getElementById('eventAddTitle').value = '';
+  document.getElementById('eventAddStart').value = eventData.start || '';
+  document.getElementById('eventAddEnd').value = '';
+  document.getElementById('eventAddDesc').value = '';
+  modal.style.display = 'flex';
+}
 
-  if (!title || !idInput || !titleInput || !startInput || !descInput) {
-    console.warn('Elemen input modal belum tersedia!');
+function openEventEditModal(eventData = {}) {
+  const modal = document.getElementById('eventEditModal');
+  if (!modal) return;
+
+  const title = document.getElementById('modalTitleEdit');
+  const idInput = document.getElementById('eventEditId');
+  const titleInput = document.getElementById('eventEditTitle');
+  const startInput = document.getElementById('eventEditStart');
+  const endInput = document.getElementById('eventEditEnd');
+  const descInput = document.getElementById('eventEditDesc');
+  const deleteBtn = document.getElementById('eventEditDeleteBtn');
+
+  if (!title || !idInput || !titleInput || !startInput || !endInput || !descInput || !deleteBtn) {
+    console.warn('Input dalam #eventEditModal tidak lengkap!');
     return;
   }
 
   modal.style.display = 'flex';
+  title.innerText = 'Edit Jadwal';
+  idInput.value = eventData.id || '';
+  titleInput.value = eventData.title || '';
+  startInput.value = eventData.start || '';
+  endInput.value = eventData.end || '';
+  descInput.value = eventData.description || '';
 
-  const isEdit = !!eventData;
-  title.innerText = isEdit ? 'Edit Jadwal' : 'Tambah Jadwal';
-
-  idInput.value = isEdit ? eventData.id : '';
-  titleInput.value = isEdit ? eventData.title : '';
-  startInput.value = isEdit ? eventData.start : '';
-  endInput.value = isEdit ? eventData.end : '';
-  descInput.value = isEdit ? eventData.description : '';
-
-  // 🔍 DETEKSI JADWAL LEWAT
-  if (isEdit && eventData.end) {
+  if (eventData.end) {
     const endDate = new Date(eventData.end);
     const now = new Date();
     const isPast = endDate < now;
-
-    if (isPast) {
-      deleteBtn.style.display = 'inline-block'; // ✅ tampilkan
-      deleteBtn.disabled = false;
-    } else {
-      deleteBtn.style.display = 'none'; // ❌ sembunyikan jika belum lewat
-    }
+    deleteBtn.style.display = isPast ? 'inline-block' : 'none';
+    deleteBtn.disabled = !isPast;
   } else {
-    deleteBtn.style.display = 'none'; // untuk Tambah Jadwal
+    deleteBtn.style.display = 'none';
   }
 }
 
+function saveNewEvent() {
+  const id = document.getElementById('eventAddId').value;
+  const title = document.getElementById('eventAddTitle').value;
+  const start = document.getElementById('eventAddStart').value;
+  const end = document.getElementById('eventAddEnd').value;
+  const desc = document.getElementById('eventAddDesc').value;
+
+  if (!title || !start) {
+    alert('Judul dan tanggal mulai wajib diisi!');
+    return;
+  }
+
+  const eventData = {
+    title,
+    start: firebase.firestore.Timestamp.fromDate(new Date(start)),
+    end: end ? firebase.firestore.Timestamp.fromDate(new Date(end)) : null,
+    description: desc
+  };
+
+  firestore.collection('events').add(eventData).then(() => {
+    closeModal('eventAddModal');
+    initScheduleCalendar();
+  });
+}
+
+function saveEventEdit() {
+  const id = document.getElementById('eventEditId').value;
+  const title = document.getElementById('eventEditTitle').value;
+  const start = document.getElementById('eventEditStart').value;
+  const end = document.getElementById('eventEditEnd').value;
+  const desc = document.getElementById('eventEditDesc').value;
+
+  if (!id || !title || !start) {
+    alert('ID, Judul, dan Tanggal mulai wajib diisi!');
+    return;
+  }
+
+  const eventData = {
+    title,
+    start: firebase.firestore.Timestamp.fromDate(new Date(start)),
+    end: end ? firebase.firestore.Timestamp.fromDate(new Date(end)) : null,
+    description: desc
+  };
+
+  firestore.collection('events').doc(id).update(eventData).then(() => {
+    closeModal('eventEditModal');
+    initScheduleCalendar();
+  });
+}
     // Setup event handlers
     setupEventHandlers();
     
-    function setupEventHandlers() {
+    // Let Firebase Auth State Observer handle authentication
+    // The auth state observer will show the appropriate content
+function setupEventHandlers() {
   const tabIds = [
     { id: 'homeTab', page: 'home' },
     { id: 'scheduleTab', page: 'schedule' },
@@ -1535,27 +1803,14 @@ if (shopMenu) {
 }
 
 
-// Profile photo upload handler
-const profilePhotoInput = document.getElementById('profilePhotoInput');
-if (profilePhotoInput) {
-    profilePhotoInput.addEventListener('change', uploadProfilePhoto);
-}
-const profileMenuBtn = document.getElementById('profileMenuBtn');
-if (profileMenuBtn) {
-  profileMenuBtn.onclick = () => {
-    setActiveTab('profileMenuBtn');
-    showPage('profile');
-    showProfileData();
-  };
-}
     // Admin button handler
     const adminMenuBtn = document.getElementById('adminMenuBtn');
 if (adminMenuBtn) {
   adminMenuBtn.onclick = function() {
-    if (!isAdmin) {
+    if (!isAdmin()) {
   document.getElementById('adminMenuBtn').style.display = 'none';
 }
-    if (!isAdmin) {
+    if (!isAdmin()) {
       alert('You do not have permission to access this page.');
       return;
     }
@@ -1567,21 +1822,6 @@ if (adminMenuBtn) {
 }
 
 // Additional placeholder functions (to be implemented)
-
-function showAuthModal(showRegister = false) {
-  const authModal = document.getElementById('authModal');
-  if (!authModal) return;
-  authModal.style.display = 'block';
-  document.getElementById('authForm').reset();
-  if (showRegister) {
-    document.getElementById('authTitle').innerText = 'Register';
-    document.getElementById('authSubmit').innerText = 'Register';
-  } else {
-    document.getElementById('authTitle').innerText = 'Login';
-    document.getElementById('authSubmit').innerText = 'Login';
-  }
-}
-
 function showAuthPage(showRegister = false) {
   showAuthModal(showRegister);
 }
@@ -1590,42 +1830,8 @@ function showChangePasswordForm() {
   openModal('changePwdModal');
 }
 
-function renderUserPostCard() {
-    const postCard = document.getElementById('userPostCard');
-    if (!currentUser || !postCard) return;
-    firestore.collection('posts')
-        .where('uid', '==', currentUser.uid)
-        .orderBy('createdAt', 'desc')
-        .limit(1)
-        .get()
-        .then(snapshot => {
-            if (snapshot.empty) {
-                postCard.innerHTML = '<i>Belum ada postingan.</i>';
-                return;
-            }
-            const post = snapshot.docs[0].data();
-            postCard.innerHTML = `
-                <div class="post-avatar"><img src="${post.photoUrl || 'default.jpg'}" alt="User"></div>
-                <div class="post-content">${post.content || ''}</div>
-                <div class="post-date">${post.createdAt?.toDate().toLocaleString() || ''}</div>
-            `;
-        });
-}
-
-function showProfileData() {  
-    if (!currentUser) return;
-    firestore.collection('users').doc(currentUser.uid).get().then(doc => {
-        if (!doc.exists) return;
-        const data = doc.data();
-        document.getElementById('profilePhoto').src = data.photoUrl || 'default.jpg';
-        document.getElementById('profileUsername').value = data.username || '';
-        document.getElementById('profileEmail').value = data.email || '';
-        document.getElementById('profilePhone').value = data.phone || '';
-    });
-}
-
 function renderAdminMemberList() {
-    if (!isAdmin) {
+    if (!isAdmin()) {
         document.getElementById('adminMemberList').innerHTML = '<p>Access denied. Admin privileges required.</p>';
         return;
     }
@@ -1652,31 +1858,6 @@ function renderAdminMemberList() {
         document.getElementById('adminMemberList').innerHTML = html;
     });
 }
-
-function renderAdminMemberList() {
-  const el = document.getElementById('adminMemberList');
-  if (!el) return;
-
-  firestore.collection('users').get().then(snapshot => {
-    let html = '<div class="member-list">';
-    snapshot.forEach(doc => {
-      const user = doc.data();
-      const uid = doc.id;
-      html += `
-        <div class="member-card">
-          <strong>${user.email}</strong><br>
-          Role: ${user.role || 'member'}<br>
-          <button onclick="toggleUserRole('${uid}', '${user.role || 'member'}')">Ubah Role</button>
-          <button onclick="deleteMember('${uid}')">Hapus</button>
-        </div>
-      `;
-    });
-    html += '</div>';
-    el.innerHTML = html;
-  });
-}
-
-
 function renderArticles() {
   const blogContent = document.getElementById('blogContent');
   if (!blogContent) return;
@@ -1690,13 +1871,24 @@ function renderArticles() {
     let html = '';
     snapshot.forEach(doc => {
       const art = doc.data();
+      const id = doc.id;
+      const createdAt = art.createdAt?.toDate().toLocaleString() || '-';
+      const author = art.author || 'Anonim';
+
       html += `
-        <div class="blog-post">
-          <h3>${art.title}</h3>
-          ${art.image ? `<img src="${art.image}" style="max-width:100%;border-radius:6px;margin-bottom:8px;">` : ''}
-          <div>${art.content}</div>
-          <small><i>Dibuat: ${art.createdAt?.toDate().toLocaleString() || '-'}</i></small>
-          ${isAdmin() ? `<div><button onclick="editArticle('${doc.id}')">✏ Edit</button></div>` : ''}
+        <div class="blog-post" onclick="toggleArticle(this)" style="cursor:pointer;">
+          <h3 class="article-title">${art.title}</h3>
+          ${art.image ? `<img class="article-image" src="${art.image}" style="max-width:100%;border-radius:6px;margin-bottom:8px;">` : ''}
+          <div class="article-content" style="display:none;margin-top:6px;">
+            <div>${art.content}</div>
+            <small><i>Dibuat: ${createdAt} oleh ${author}</i></small>
+            ${isAdmin() ? `
+              <div style="margin-top:8px;">
+                <button class="btn" onclick="event.stopPropagation(); editArticle('${id}')">Edit</button>
+                <button class="btn delete-btn" onclick="event.stopPropagation(); deleteArticle('${id}')">Hapus</button>
+              </div>
+            ` : ''}
+          </div>
         </div>
         <hr>
       `;
@@ -1705,50 +1897,83 @@ function renderArticles() {
     blogContent.innerHTML = html;
   });
 }
+// Jika ada gambar, baca dulu base64-nya
 
+function editArticle(id) {
+  firestore.collection('articles').doc(id).get().then(doc => {
+    if (!doc.exists) return alert('Artikel tidak ditemukan!');
+    const art = doc.data();
+    document.getElementById('articleForm').style.display = 'block';
+    document.getElementById('addArticleButton').style.display = 'none';
+    document.getElementById('articleTitle').value = art.title;
+    if (window.quill) window.quill.root.innerHTML = art.content || '';
+    // Simpan id artikel yang diedit
+    document.getElementById('articleForm').setAttribute('data-edit-id', id);
+  });
+}
 
+function deleteArticle(id) {
+  if (!confirm('Yakin ingin menghapus artikel ini?')) return;
+  firestore.collection('articles').doc(id).delete().then(() => {
+    alert('Artikel dihapus!');
+    renderArticles();
+  });
+}
 function saveArticle() {
   const title = document.getElementById('articleTitle').value.trim();
   const imageFile = document.getElementById('articleImage').files[0];
   const content = window.quill?.root.innerHTML || '';
+  const form = document.getElementById('articleForm');
+  const editId = form.getAttribute('data-edit-id');
 
   if (!title || !content) {
     alert('Judul dan isi artikel wajib diisi!');
     return;
   }
 
-  const articleData = {
-    title,
-    content,
-    createdAt: firebase.firestore.Timestamp.now(),
-    author: firebase.auth().currentUser?.email || 'Anonim',
-  };
+  // Ambil username dari profil Firestore
+  firestore.collection('users').doc(currentUser.uid).get().then(userDoc => {
+    const username = userDoc.exists ? userDoc.data().username || currentUser.email : currentUser.email;
 
-  // Jika ada gambar, baca dulu base64-nya
-  if (imageFile) {
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      articleData.image = e.target.result;
-      firestore.collection('articles').add(articleData).then(() => {
-        alert('Artikel berhasil disimpan!');
-        hideArticleForm();
-        renderArticles();
-      });
+    const articleData = {
+      title,
+      content,
+      createdAt: firebase.firestore.Timestamp.now(),
+      author: username, // Simpan username, bukan email
     };
-    reader.readAsDataURL(imageFile);
-  } else {
-    firestore.collection('articles').add(articleData).then(() => {
-      alert('Artikel berhasil disimpan!');
+
+    function afterSave() {
+      alert(editId ? 'Artikel berhasil diupdate!' : 'Artikel berhasil disimpan!');
       hideArticleForm();
       renderArticles();
-    });
-  }
+      form.removeAttribute('data-edit-id');
+    }
+
+    if (imageFile) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        articleData.image = e.target.result;
+        if (editId) {
+          firestore.collection('articles').doc(editId).update(articleData).then(afterSave);
+        } else {
+          firestore.collection('articles').add(articleData).then(afterSave);
+        }
+      };
+      reader.readAsDataURL(imageFile);
+    } else {
+      if (editId) {
+        firestore.collection('articles').doc(editId).update(articleData).then(afterSave);
+      } else {
+        firestore.collection('articles').add(articleData).then(afterSave);
+      }
+    }
+  });
 }
 
 function showArticleForm() {
   document.getElementById('articleForm').style.display = 'block';
   document.getElementById('addArticleButton').style.display = 'none';
-}
+
   // ✅ Pastikan Quill sudah diinisialisasi
   if (!window.quill) {
     const quillContainer = document.getElementById('editor');
@@ -1763,126 +1988,233 @@ function showArticleForm() {
     window.quill = new Quill('#editor', { theme: 'snow' });
   }
 }
-
+}
 function hideArticleForm() {
   document.getElementById('articleForm').style.display = 'none';
   document.getElementById('addArticleButton').style.display = 'block';
 }
 
+function toggleArticle(el) {
+  const content = el.querySelector('.article-content');
+  if (!content) return;
 
+  const isVisible = content.style.display === 'block';
 
-function showAdminGroupBtns() {
-    if (!isAdmin) return;
-    const adminBtns = document.getElementById('adminGroupBtns');
-    if (!adminBtns) return;
-    adminBtns.innerHTML = `
-        <button class="btn" onclick="addGroup()">Tambah Group</button>
-        <button class="btn" onclick="refreshGroupList()">Refresh Group</button>
-    `;
+  // Sembunyikan semua artikel lain
+  document.querySelectorAll('.article-content').forEach(c => c.style.display = 'none');
+
+  // Toggle tampilan yang diklik
+  content.style.display = isVisible ? 'none' : 'block';
+
+  // Gulung ke atas jika menutup
+  if (isVisible) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
-function addGroup() {
-  const groupName = prompt("Masukkan Nama Group:");
-  if (!groupName) return;
 
-  const groupDesc = prompt("Deskripsi Group:");
-  
+function addGroup() {
+  // Tampilkan prompt atau modal untuk input nama dan deskripsi grup
+  const groupName = prompt('Nama Group:');
+  if (!groupName) return alert('Nama group wajib diisi!');
+  const groupDesc = prompt('Deskripsi Group:') || '';
+
   firestore.collection('groups').add({
     name: groupName,
     description: groupDesc,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    adminId: auth.currentUser?.uid
   }).then(() => {
-    alert('Group berhasil ditambahkan.');
-    refreshGroupList(); // reload daftar
-  }).catch(error => {
-    alert('Gagal tambah group: ' + error.message);
-  });
-}
-
-function refreshGroupList() {
-  renderGroupList();
-}
-function joinGroup(groupId) {
-  const user = firebase.auth().currentUser;
-  if (!user) return alert('Harap login terlebih dahulu');
-  
-  firestore.collection('groups').doc(groupId).update({
-    members: firebase.firestore.FieldValue.arrayUnion(user.uid)
-  }).then(() => {
-    alert('Berhasil bergabung ke grup!');
+    alert('Group berhasil dibuat!');
     renderGroupList();
   }).catch(err => {
-    alert('Gagal join group: ' + err.message);
+    alert('Gagal membuat group: ' + err.message);
   });
 }
-
-function leaveGroup(groupId) {
-  const user = firebase.auth().currentUser;
-  if (!user) return alert('Harap login terlebih dahulu');
-
-  firestore.collection('groups').doc(groupId).update({
-    members: firebase.firestore.FieldValue.arrayRemove(user.uid)
-  }).then(() => {
-    alert('Berhasil keluar dari grup!');
-    renderGroupList();
-  });
+function showAdminGroupBtns() {
+    const adminBtns = document.getElementById('adminGroupBtns');
+    if (!adminBtns) return;
+    adminBtns.innerHTML = isAdmin() ? `
+        <button class="btn" onclick="addGroup()">Tambah Group</button>
+        <button class="btn" onclick="refreshGroupList()">Refresh Group</button>
+        <button class="btn" onclick="logoutAdmin()">Logout Admin</button>
+        <button class="btn" onclick="loginAdmin()">Login Admin</button>
+        ` : `
+    `;
 }
 
-function deleteGroup(groupId) {
-  if (!confirm('Yakin ingin menghapus grup ini?')) return;
-  firestore.collection('groups').doc(groupId).delete().then(() => {
-    alert('Grup berhasil dihapus');
-    renderGroupList();
+// Gabung Group (hanya admin group bisa invite, user bisa gabung jika diizinkan)
+function joinGroup(groupId) {
+  firestore.collection('groups').doc(groupId).get().then(doc => {
+    if (!doc.exists) return;
+    const group = doc.data();
+    // Contoh: hanya admin group bisa invite, user gabung jika diizinkan
+    // Jika ingin membatasi, tambahkan logika di sini
+    const user = auth.currentUser;
+    if (!user) return alert('Harap login terlebih dahulu');
+    firestore.collection('groups').doc(groupId).update({
+      members: firebase.firestore.FieldValue.arrayUnion(user.uid)
+    }).then(() => {
+      alert('Berhasil bergabung ke grup!');
+      renderGroupList();
+    });
   });
 }
 
 function renderGroupList() {
-  const groupList = document.getElementById('groupList');
-  if (!groupList) return;
+  const container = document.getElementById('groupList');
+  if (!container) return;
 
   firestore.collection('groups').get().then(snapshot => {
     if (snapshot.empty) {
-      groupList.innerHTML = '<i>Belum ada group.</i>';
+      container.innerHTML = '<p>Belum ada grup.</p>';
       return;
     }
 
     let html = '';
     snapshot.forEach(doc => {
       const group = doc.data();
-      const groupId = doc.id;
-
+      const id = doc.id;
       const currentUid = auth.currentUser?.uid;
-      const isMember = group.members?.includes(currentUid);
-      const isAdmin = group.adminId === currentUid;
-
-      // Tombol dinamis berdasarkan status user
-      let buttons = '';
-      if (!isMember) {
-        buttons += `<button onclick="joinGroup('${groupId}')">Gabung</button>`;
-      } else {
-        buttons += `<button onclick="leaveGroup('${groupId}')">Keluar</button>`;
-      }
-
-      if (isAdmin) {
-        buttons += `<button onclick="deleteGroup('${groupId}')">Hapus</button>`;
-      }
-
+      const isAdminGroup = group.adminId === currentUid || isAdmin();
       html += `
-        <div class="group-card">
-          <strong>${group.name}</strong><br>
-          <span>${group.description || ''}</span><br>
-          ${buttons}
+        <div class="group-item" style="border:1px solid #ccc; padding:10px; margin-bottom:10px; border-radius:6px;">
+          <h4>${group.name}</h4>
+          <p>${group.description || ''}</p>
+          <button onclick="openGroupChat('${id}', '${group.name}')">Chat</button>
+          ${isAdminGroup ? `
+            <button onclick="editGroup('${id}')">Edit</button>
+            <button onclick="deleteGroup('${id}')">Hapus</button>
+            <button onclick="clearGroupChat('${id}')">Clear Chat</button>
+          ` : `
+            <button onclick="joinGroup('${id}')">Gabung</button>
+          `}
         </div>
       `;
     });
-
-     groupList.innerHTML = html;
-  }).catch(err => {
-    groupList.innerHTML = `<p style="color:red;">Gagal memuat grup: ${err.message}</p>`;
+    container.innerHTML = html;
   });
 }
 
+// Edit Group Modal (contoh sederhana)
+function editGroup(groupId) {
+  firestore.collection('groups').doc(groupId).get().then(doc => {
+    if (!doc.exists) return alert('Group tidak ditemukan');
+    const group = doc.data();
+    const newName = prompt('Edit Nama Group:', group.name);
+    const newDesc = prompt('Edit Deskripsi Group:', group.description || '');
+    if (newName) {
+      firestore.collection('groups').doc(groupId).update({
+        name: newName,
+        description: newDesc
+      }).then(() => {
+        alert('Group berhasil diupdate');
+        renderGroupList();
+      });
+    }
+  });
+}
+// Hapus Group (hanya admin group)
+function deleteGroup(groupId) {
+  firestore.collection('groups').doc(groupId).get().then(doc => {
+    if (!doc.exists) return;
+    const group = doc.data();
+    const currentUid = auth.currentUser?.uid;
+    if (group.adminId !== currentUid) {
+      alert('Hanya admin group yang bisa menghapus group!');
+      return;
+    }
+    if (!confirm('Yakin ingin menghapus grup ini?')) return;
+    firestore.collection('groups').doc(groupId).delete().then(() => {
+      alert('Grup berhasil dihapus');
+      renderGroupList();
+    });
+  });
+}
 
+function openGroupChat(groupId, groupName) {
+  currentGroupId = groupId;
+  document.getElementById('groupChatTitle').innerText = 'Group Chat - ' + groupName;
+  document.getElementById('groupChatMessages').innerHTML = 'Memuat pesan...';
+  openModal('groupChatModal');
 
+  firestore.collection('groups').doc(groupId).collection('chats')
+    .orderBy('timestamp')
+    .onSnapshot(snapshot => {
+      const chatBox = document.getElementById('groupChatMessages');
+      chatBox.innerHTML = '';
+      snapshot.forEach(doc => {
+        const chat = doc.data();
+        // Gunakan username jika ada, fallback ke email atau 'Anonim'
+        let displayName = chat.username || chat.user || 'Anonim';
+        item = document.createElement('div');
+        item.innerHTML = `<b>${displayName}</b>: ${chat.message}`;
+        chatBox.appendChild(item);
+      });
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+}
+
+function sendGroupChat() {
+  const msg = document.getElementById('groupChatInput').value.trim();
+  // Ambil username dari Firestore user profile, fallback ke email atau 'Anonim'
+  let username = '';
+  if (currentUser) {
+    // Coba ambil dari Firestore user profile
+    firestore.collection('users').doc(currentUser.uid).get().then(doc => {
+      if (doc.exists) {
+        username = doc.data().username || currentUser.email || 'Anonim';
+      } else {
+        username = currentUser.email || 'Anonim';
+      }
+      if (!msg || !currentGroupId) return;
+      firestore.collection('groups').doc(currentGroupId).collection('chats').add({
+        username,
+        message: msg,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        document.getElementById('groupChatInput').value = '';
+      });
+    });
+  } else {
+    // Jika belum login
+    if (!msg || !currentGroupId) return;
+    firestore.collection('groups').doc(currentGroupId).collection('chats').add({
+      username: 'Anonim',
+      message: msg,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+      document.getElementById('groupChatInput').value = '';
+    });
+  }
+}
+
+// Clear Chat (hanya admin group)
+function clearGroupChat(groupId) {
+  firestore.collection('groups').doc(groupId).get().then(doc => {
+    if (!doc.exists) return;
+    const group = doc.data();
+    const currentUid = auth.currentUser?.uid;
+    if (group.adminId !== currentUid) {
+      alert('Hanya admin group yang bisa clear chat!');
+      return;
+    }
+    if (!confirm('Yakin ingin menghapus semua chat di grup ini?')) return;
+    firestore.collection('groups').doc(groupId).collection('chats').get().then(snapshot => {
+      const batch = firestore.batch();
+      snapshot.forEach(chatDoc => {
+        batch.delete(chatDoc.ref);
+      });
+      batch.commit().then(() => {
+        alert('Semua chat di grup telah dihapus.');
+        openGroupChat(groupId, group.name);
+      });
+    });
+  });
+}
+// Jalankan saat halaman group aktif
+if (window.location.hash.includes('group')) {
+  setTimeout(renderGroupList, 200);
+}
 
 // ✅ Fix untuk error classList dan klik tab
 function setActiveTab(tabId) {

@@ -330,7 +330,6 @@ body {
 #articleForm input[type="file"] {
   margin: 10px 0;
 }
-
 .card {
   background: #fff;
   margin: 10px 0;
@@ -1384,6 +1383,88 @@ button:hover {
   margin: 0 auto 8px;
 }
 
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.form-control:focus {
+  border-color: #007BFF;
+  outline: none;
+  box-shadow: 0 0 4px rgba(0, 123, 255, 0.3);
+}
+
+#productDetailModal {
+  display: none;
+  position: fixed;
+  top: 10%;
+  left: 10%;
+  width: 80%;
+  background: #fff;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  overflow-y: auto; /* Allow scrolling inside modal */
+  max-height: 80%; /* Prevent modal from exceeding viewport height */
+}
+#productDetailModal .modal-content {
+  padding: 20px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  width: 90%;
+  max-width: 500px;
+  margin: 5% auto;
+}
+#productDetailModal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+#productDetailModal .modal-header h2 {
+  margin: 0;
+  font-size: 1.5em;
+  color: #333;
+}
+#productDetailModal .modal-header button {
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  color: #888;
+  cursor: pointer;
+}
+#productDetailModal .modal-header button:hover {
+  color: #000;
+}
+#productDetailModal .modal-body {
+  margin-top: 10px;
+}
+#productDetailModal .modal-body p {
+  color: #555;
+  font-size: 1em;
+  margin-bottom: 10px;
+}
+#productDetailModal .modal-body .prod-price {
+  font-size: 1.2em;
+  color: #2563eb;
+  margin-bottom: 10px;
+}
+
 @media (max-width: 600px) {
   #productDetailContent img {
     width: 100%;
@@ -1399,3 +1480,60 @@ button:hover {
     padding: 12px;
   }
 }
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  background: #fff;
+  margin: 10% auto;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+.form-control {
+  width: 100%;
+  padding: 10px;
+  font-size: 1em;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+.form-control:focus {
+  border-color: #2563eb;
+  outline: none;
+  box-shadow: 0 0 4px rgba(37, 99, 235, 0.4);
+}
+
+#profilePhoto {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
