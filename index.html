@@ -263,16 +263,32 @@ document.addEventListener("DOMContentLoaded", function () {
     <button class="btn" onclick="saveProfile()">Simpan Profil</button>
     <button class="btn btn-danger" onclick="logoutUser()">Logout</button>
   </div>
-
   <div id="authError" style="display:none;margin-top:10px;"></div>
 </div>
 
-  
-  <div id="servicesContent" style="display:none;">
-    <h2>Layanan Kami</h2>
-    <div id="servicesList"></div>
-    <button class="btn" onclick="loadMoreServices()">Lihat Semua Layanan</button>
+
+<!-- === MODAL SERVICES === -->
+ <nav style="padding:10px;background:#333;color:#fff;">
+    <button onclick="navigateTo('services')" style="padding:6px 12px;">Buka Layanan</button>
+  </nav>
+
+  <div class="page" id="page-services">
+    <section class="service-section">
+      <h2>Layanan Jasa Kami</h2>
+      <p class="service-subtitle">Kami hadir untuk melayani Anda dengan berbagai jasa profesional & terpercaya.</p>
+
+      <div class="service-grid" id="serviceList"></div>
+
+      <div id="serviceDetail" class="service-detail" style="display:none;">
+        <h3 id="detailTitle"></h3>
+        <p id="detailDesc"></p>
+        <button class="btn" onclick="closeServiceDetail()">Tutup</button>
+      </div>
+    </section>
   </div>
+
+
+
   <div id="mySitesContent" style="display:none;">
     <h2>My Sites</h2>
     <div id="mySitesList"></div>
@@ -302,6 +318,7 @@ document.addEventListener("DOMContentLoaded", function () {
   <div id="pageContent"></div>
   </div>
 </div>
+
   <div class="modal" id="shopModal" style="display:none;">
     <div class="modal-content">
       <span class="close" onclick="closeModal('shopModal')">&times;</span>
@@ -335,18 +352,25 @@ document.addEventListener("DOMContentLoaded", function () {
   </div>
 </div>
 <!-- === GROUP SECTION WITH CHAT === -->
-<div id="groupList"></div>
+<div id="groupList" class="group-list"></div>
 
 <!-- === GROUP CHAT MODAL === -->
 <div class="modal" id="groupChatModal" style="display:none;">
   <div class="modal-content" style="max-width:400px;">
     <span class="close" onclick="closeModal('groupChatModal')">&times;</span>
     <h3 id="groupChatTitle">Group Chat</h3>
-    <div id="groupChatMessages" style="height:180px;overflow:auto;border:1px solid #eee;padding:8px 6px 8px 6px;margin-bottom:10px;background:#f9f9f9;border-radius:6px;"></div>
+    <div id="groupChatMessages" style="height:320px;overflow:auto;border:1px solid #eee;padding:8px 6px 8px 6px;margin-bottom:10px;background:#f9f9f9;border-radius:6px;"></div>
     <input id="groupChatInput" placeholder="Ketik pesan..." style="width:70%;" type="text"/>
     <button class="btn" onclick="sendGroupChat()">Kirim</button>
   </div>
 </div>
+<style>
+  #groupChatMessages div {
+    margin-bottom: 6px;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+</style>
 
   <div class="modal" id="changePwdModal" style="display:none;">
     <div class="modal-content" style="max-width:350px;">

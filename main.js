@@ -126,7 +126,7 @@ function addToCart(productId) {
     // Kurangi stok di Firestore
     firestore.collection('products').doc(productId).update({
       stock: prod.stock - 1
-    });
+    }).then(() => renderShopProducts());
     alert('Produk ditambahkan ke keranjang.');
   });
 }
@@ -154,7 +154,12 @@ function renderShopProducts(filterLocation = '') {
         <!-- <div class="prod-id">ID: ${id}</div> -->
         <div class="prod-name">${prod.name}</div>
         <div class="prod-price">${formatCurrency(prod.price, prod.currency || 'IDR')}</div>
-        <div class="prod-stock">Stok: ${prod.stock}</div>
+       <div class="prod-stock">Stok: ${prod.stock}</div>
+       <div class="prod-location">
+  <span style="color: red;">Map of Pi</span> : ${prod.location || '-'}
+</div>
+
+
         <div class="prod-actions">
           ${!isAdmin() ? `
             <button onclick="showProductDetail('${id}')" class="btn">Detail</button>
@@ -242,11 +247,12 @@ function resetShopFilter() {
   renderShopProducts();
 }
 
-function renderProductForm(container, id = null, prod = { name: '', price: '', currency: 'IDR', stock: 1, desc: '', img: '' }) {
+function renderProductForm(container, id = null, prod = { name: '', price: '', currency: 'IDR', stock: 1, desc: '', img: '', location: '' }) {
   container.innerHTML = `
     <input type="text" id="prodName" placeholder="Nama Produk" value="${prod.name}">
     <input type="number" id="prodPrice" placeholder="Harga" value="${prod.price}">
-    <input type="text" id="prod-location" placeholder="Lokasi Produk" value="${prod.location}">
+    <input type="text" id="prod-location" placeholder="Lokasi Produk" value="${prod.location || ''}">
+
     <select id="prodCurrency">
       <option value="IDR" ${prod.currency === 'IDR' ? 'selected' : ''}>IDR</option>
       <option value="USD" ${prod.currency === 'USD' ? 'selected' : ''}>USD</option>
@@ -384,6 +390,16 @@ function renderCheckoutContent(container) {
   container.appendChild(nameInput);
   container.appendChild(addressInput);
   container.appendChild(btnRow);
+
+  const paymentSelect = document.createElement('select');
+paymentSelect.id = 'orderPaymentMethod';
+paymentSelect.innerHTML = `
+  <option value="cod">Bayar di Tempat (COD)</option>
+  <option value="transfer">Transfer Bank</option>
+  <option value="qris">QRIS</option>
+  <option value="pi">π Pi Coin</option>
+`;
+container.appendChild(paymentSelect);
 }
 
 function processOrder() {
@@ -396,13 +412,16 @@ function processOrder() {
     return;
   }
 
+  const paymentMethod = document.getElementById('orderPaymentMethod').value;
   const order = {
-    name,
-    address,
-    items: cart,
-    timestamp: new Date().toISOString()
-  };
-
+  name,
+  address,
+  paymentMethod,
+  items: cart,
+  status: 'pending', // status awal
+  timestamp: new Date().toISOString()
+};
+  
   firestore.collection('orders').add(order).then(() => {
     alert('Pesanan berhasil diproses!');
     localStorage.removeItem('cart');
@@ -412,6 +431,14 @@ function processOrder() {
     alert('Gagal memproses pesanan: ' + err.message);
   });
 }
+
+function showEditProduct(id) {
+  db.collection("products").doc(id).get().then(doc => {
+    const data = doc.data();
+    renderProductForm(container, id, data);
+  });
+}
+
 function saveEditProduct(id) {
   const imageUrl = document.getElementById('prodImg').value;
   const name = document.getElementById('prodName').value;
@@ -419,8 +446,14 @@ function saveEditProduct(id) {
   const currency = document.getElementById('prodCurrency').value;
   const stock = parseInt(document.getElementById('prodStock').value);
   const desc = document.getElementById('prodDesc').value;
+  const location = document.getElementById("prod-location").value.trim();
 
-  if (!name || isNaN(price) || isNaN(stock) || !imageUrl) {
+  if (!location) {
+    alert("Lokasi wajib diisi.");
+    return;
+  }
+
+  if (!name || isNaN(price) || isNaN(stock) || !imageUrl || !location) {
     alert("Mohon lengkapi semua field dengan benar.");
     return;
   }
@@ -431,7 +464,9 @@ function saveEditProduct(id) {
     currency,
     stock,
     img: imageUrl,
-    desc
+    desc,
+    location,
+    createdAt: new Date() // Tetap simpan createdAt untuk konsistensi
   };
 
   firestore.collection('products').doc(id).update(data).then(() => {
@@ -449,8 +484,13 @@ function saveNewProduct() {
   const stock = parseInt(document.getElementById('prodStock').value);
   const imageUrl = document.getElementById('prodImg').value;
   const desc = document.getElementById('prodDesc').value;
+  const location = document.getElementById("prod-location").value.trim();
 
-  if (!name || isNaN(price) || isNaN(stock) || !imageUrl) {
+  if (!location) {
+    alert("Lokasi wajib diisi.");
+    return;
+  }
+  if (!name || isNaN(price) || isNaN(stock) || !imageUrl || !location) {
     alert("Mohon lengkapi semua field dengan benar.");
     return;
   }
@@ -462,7 +502,8 @@ function saveNewProduct() {
     stock,
     img: imageUrl,
     desc,
-    createdAt: new Date()
+    createdAt: new Date(),
+    location
   };
 
   firestore.collection('products').add(data).then(() => {
@@ -479,8 +520,9 @@ function updateData() {
   const currency = document.getElementById('prodCurrency').value;
   const stock = parseInt(document.getElementById('prodStock').value);
   const desc = document.getElementById('prodDesc').value;
+  const location = document.getElementById("prod-location").value.trim();
 
-  if (!name || isNaN(price) || isNaN(stock) || !imageUrl) {
+  if (!name || isNaN(price) || isNaN(stock) || !imageUrl || !desc || !location) {
     alert("Mohon lengkapi semua field dengan benar.");
     return;
   }
@@ -491,7 +533,8 @@ function updateData() {
     currency,
     stock,
     img: imageUrl,
-    desc
+    desc,
+    location
   };
 
   firestore.collection('products').doc(id).update(data).then(() => {
@@ -501,6 +544,7 @@ function updateData() {
     alert("Gagal menyimpan perubahan: " + err.message);
   });
 }
+
 function deleteProduct(id) {
   if (confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
     firestore.collection('products').doc(id).delete()
@@ -1099,15 +1143,7 @@ const pages = {
             </div>
         </div>
     `,
-    services: `
-        <h2>Our Services(Dalam Pengembangan)</h2>
-        <ul>
-            <li>Konsultasi Komunitas</li>
-            <li>Webinar & Workshop</li>
-            <li>Support Project Pi Network</li>
-            <li>Q & A</li>
-        </ul>
-    `,
+    
     blog: `
         <div id="blog" class="tab-content">
             <h2 id="blogTitle">Blog</h2>
@@ -1164,6 +1200,39 @@ const pages = {
     `
 };
 
+
+function navigateTo(pageName) {
+  // Cek apakah halaman yang diminta valid
+  document.querySelectorAll(".page").forEach(p => p.style.display = "none");
+  if (!document.getElementById(`page-${pageName}`)) {
+  // Sembunyikan semua
+  document.querySelectorAll(".page").forEach(p => p.style.display = "none");
+
+  // Tampilkan halaman target
+  const page = document.getElementById(`page-${pageName}`);
+  if (page) {
+    page.style.display = "block";
+
+    // Jalankan render jika halaman service
+    if (pageName === "services") renderServices();
+  }
+    console.warn(`Halaman ${pageName} tidak ditemukan!`);
+    return;
+  }
+}
+function showPage(pageName) {
+  // Sembunyikan semua halaman
+  document.querySelectorAll(".page").forEach(p => p.style.display = "none");
+
+  // Tampilkan halaman target
+  const page = document.getElementById(`page-${pageName}`);
+  if (page) {
+    page.style.display = "block";
+
+    // Jalankan render jika halaman service
+    if (pageName === "services") renderServices();
+  }
+}
 
 // Function to initialize the schedule calendar
 // ✅ Function to initialize the schedule calendar
@@ -2077,7 +2146,7 @@ function renderGroupList() {
       const currentUid = auth.currentUser?.uid;
       const isAdminGroup = group.adminId === currentUid || isAdmin();
       html += `
-        <div class="group-item" style="border:1px solid #ccc; padding:10px; margin-bottom:10px; border-radius:6px;">
+        <div class="group-item">
           <h4>${group.name}</h4>
           <p>${group.description || ''}</p>
           <button onclick="openGroupChat('${id}', '${group.name}')">Chat</button>
@@ -2131,27 +2200,69 @@ function deleteGroup(groupId) {
   });
 }
 
+function stringToColor(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  let color = '#';
+  for (let i = 0; i < 3; i++) {
+    let value = (hash >> (i * 8)) & 0xFF;
+    color += ('00' + value.toString(16)).substr(-2);
+  }
+  return color;
+}
+
+function getContrastYIQ(hexColor) {
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+  return (yiq >= 128) ? '#000000' : '#FFFFFF';
+}
+
 function openGroupChat(groupId, groupName) {
   currentGroupId = groupId;
   document.getElementById('groupChatTitle').innerText = 'Group Chat - ' + groupName;
   document.getElementById('groupChatMessages').innerHTML = 'Memuat pesan...';
   openModal('groupChatModal');
+  // Ambil pesan dari Firestore
+firestore.collection('groups').doc(groupId).collection('chats')
+  .orderBy('timestamp')
+  .onSnapshot(snapshot => {
+    const chatBox = document.getElementById('groupChatMessages');
+    chatBox.innerHTML = '';
 
-  firestore.collection('groups').doc(groupId).collection('chats')
-    .orderBy('timestamp')
-    .onSnapshot(snapshot => {
-      const chatBox = document.getElementById('groupChatMessages');
-      chatBox.innerHTML = '';
-      snapshot.forEach(doc => {
-        const chat = doc.data();
-        // Gunakan username jika ada, fallback ke email atau 'Anonim'
-        let displayName = chat.username || chat.user || 'Anonim';
-        item = document.createElement('div');
-        item.innerHTML = `<b>${displayName}</b>: ${chat.message}`;
-        chatBox.appendChild(item);
-      });
-      chatBox.scrollTop = chatBox.scrollHeight;
+    snapshot.forEach(doc => {
+      const chat = doc.data();
+      const displayName = chat.username || chat.user || 'Anonim';
+
+      const bgColor = stringToColor(displayName);
+      const textColor = getContrastYIQ(bgColor);
+
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-bubble';
+      bubble.style.backgroundColor = bgColor;
+      bubble.style.color = textColor;
+
+      bubble.innerHTML = `
+        <div class="chat-username">${displayName}</div>
+        <div class="chat-message">${chat.message}</div>
+      `;
+
+      const timestamp = chat.timestamp ? chat.timestamp.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Unknown';
+      const timeEl = document.createElement('div');
+      timeEl.className = 'chat-timestamp';
+      timeEl.innerText = timestamp;
+      bubble.appendChild(timeEl);
+
+      chatBox.appendChild(bubble);
     });
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
 }
 
 function sendGroupChat() {
@@ -2242,5 +2353,74 @@ window.onclick = function(event) {
         if (event.target == modal) {
             modal.style.display = "none";
         }
+
+function renderServices() {
+  const services = [
+    {
+      icon: "🕌",
+      title: "Haji & Umrah",
+      desc: "Paket ibadah ke tanah suci dengan bimbingan muthawif dan pendampingan lengkap."
+    },
+    {
+      icon: "✈️",
+      title: "Tour & Travel",
+      desc: "Wisata religi, edukatif, dan keluarga dengan rute nasional maupun internasional."
+    },
+    {
+      icon: "💼",
+      title: "Konsultasi Syariah",
+      desc: "Bimbingan hukum & ekonomi Islam oleh pakar terpercaya dan bersertifikat."
+    },
+    {
+      icon: "⚙️",
+      title: "Servis Elektronik",
+      desc: "Perbaikan & instalasi alat rumah tangga dan kantor oleh teknisi profesional."
+    }
+  ];
+
+  const container = document.getElementById("serviceList");
+  const detailBox = document.getElementById("serviceDetail");
+  const titleEl = document.getElementById("detailTitle");
+  const descEl = document.getElementById("detailDesc");
+
+  if (!container) return;
+
+  container.innerHTML = "";
+  services.forEach(svc => {
+    const card = document.createElement("div");
+    card.className = "service-card";
+    card.innerHTML = `
+      <div class="service-icon">${svc.icon}</div>
+      <h3>${svc.title}</h3>
+      <p>${svc.desc.substring(0, 60)}...</p>
+      <button class="btn-detail">Lihat Detail</button>
+    `;
+    card.querySelector(".btn-detail").onclick = () => {
+      titleEl.innerText = svc.title;
+      descEl.innerText = svc.desc;
+      detailBox.style.display = "block";
+      detailBox.scrollIntoView({ behavior: "smooth" });
+    };
+    container.appendChild(card);
+  });
+}
+
+function closeServiceDetail() {
+  document.getElementById("serviceDetail").style.display = "none";
+}
+
+function navigateTo(pageName) {
+  document.querySelectorAll(".page").forEach(p => p.style.display = "none");
+  const page = document.getElementById(`page-${pageName}`);
+  if (page) {
+    page.style.display = "block";
+    if (pageName === "services") renderServices();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  navigateTo("services");
+});
+
     });
 };
