@@ -1204,11 +1204,6 @@ const pages = {
 function navigateTo(pageName) {
   // Cek apakah halaman yang diminta valid
   document.querySelectorAll(".page").forEach(p => p.style.display = "none");
-  if (!document.getElementById(`page-${pageName}`)) {
-  // Sembunyikan semua
-  document.querySelectorAll(".page").forEach(p => p.style.display = "none");
-
-  // Tampilkan halaman target
   const page = document.getElementById(`page-${pageName}`);
   if (page) {
     page.style.display = "block";
