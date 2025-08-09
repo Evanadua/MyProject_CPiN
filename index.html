@@ -25,7 +25,32 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
-</head>
+
+  <!-- Pi Network SDK (versi 2.0 resmi) -->
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+  <script>
+    // Inisialisasi SDK
+    window.Pi.init({ version: "2.0", sandbox: false });
+
+    // Fungsi autentikasi Pi Network
+    function authPi(callback) {
+      if (!window.Pi) {
+        alert("Fitur Pi hanya tersedia di dalam Pi Browser.");
+        return;
+      }
+
+      window.Pi.authenticate(["username"], function (auth, error) {
+        if (error) {
+          console.error("Autentikasi gagal:", error);
+          return;
+        }
+        console.log("User Pi:", auth);
+        if (callback) callback(auth);
+      });
+    }
+  </script>
+  
 
 <body>
   <!-- Header Slider -->
@@ -91,6 +116,13 @@ document.addEventListener("DOMContentLoaded", function () {
     </div>
     <div style="clear:both;"></div>
   </div>
+          
+  <!-- ⬇ Avatar kanan -->
+  <div id="userAvatarContainer">
+    <img id="userAvatar" src="" alt="Foto Profil" />
+    <div id="userTooltip"></div>
+  </div>
+</div>
 
   <!-- Tab Menu -->
   <div class="tab-menu">
@@ -147,10 +179,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   <!-- Bottom Navigation -->
   <div class="bottom-nav">
-    <a class="nav-item active" href="#" id="mySitesMenu">
-      <i class="fa fa-home"></i>
-      <span>My Sites</span>
-    </a>
+   <a class="nav-item active" href="#" id="legalMenu">
+  <i class="fa fa-gavel"></i>
+  <span>Legal</span>
+</a>
     <a class="nav-item" href="#" id="groupMenu">
       <i class="fa fa-comments"></i>
       <span>Group</span>
@@ -174,13 +206,6 @@ document.addEventListener("DOMContentLoaded", function () {
       <button onclick="copyGroupInviteCode()">Salin Kode</button>
     </div>
   </div>
-<div class="modal" id="mySitesModal" style="display:none;">
-    <div class="modal-content">
-      <span class="close" onclick="closeModal('mySitesModal')">&times;</span>
-      <h3>My Sites</h3>
-      <div id="mySitesList"></div>
-    </div>
-  </div>
 <div class="modal" id="groupModal" style="display:none;">
     <div class="modal-content">
       <span class="close" onclick="closeModal('groupModal')">&times;</span>
@@ -198,7 +223,7 @@ document.addEventListener("DOMContentLoaded", function () {
       <button class="btn" onclick="showManualProductForm()">Tambah Produk Manual</button>
       <button class="btn" onclick="showMyProfile()">My Profile</button>
       <button class="btn" onclick="showServices()">Layanan Kami</button>
-      <button class="btn" onclick="showMySites()">My Sites</button>
+      <button class="btn" onclick="showLegal()">Legal</button>
       <button class="btn" onclick="showShop()">Shop</button>
       <button class="btn btn-danger" onclick="resetAllMembers()">Reset All Members</button>
     </div>
@@ -231,19 +256,25 @@ document.addEventListener("DOMContentLoaded", function () {
       <button class="btn" onclick="saveProfileChanges()">Simpan Perubahan</button>
     </div>
   </div>
--->
-  <div id="profileSection" style="max-width:400px;margin:auto;">
-  <h2>Profil Saya</h2>
 
-  <div style="text-align:center;margin-bottom:10px;">
-    <img id="profilePhoto" src="" alt="Foto Profil" width="100" height="100" style="border-radius:50%;border:1px solid #ccc;"><br>
+--><!-- === MODAL: MY PROFILE === -->
+<div class="modal" id="myProfileModal" style="display:none;">
+  <div class="modal-content" style="max-width:400px; margin:auto;">
+    <span class="close" onclick="closeMyProfileModal()">&times;</span>
+    <h3 style="text-align:center;">Profil Saya</h3>
+
+    <!-- Foto Profil -->
+    <div style="text-align:center;margin-bottom:12px;">
+      <img id="profilePhoto" src="" alt="Foto Profil" width="100" height="100"
+           style="border-radius:50%;border:1px solid #ccc;object-fit:cover;"><br>
+      <label for="profilePhotoInputLocal" style="display:inline-block;margin-top:6px;">
+        Ganti Foto Profil:
+      </label><br>
+      <input type="file" id="profilePhotoInputLocal" accept="image/*">
+    </div>        
+    <button class="btn" onclick="openMyProfileModal()">My Profile</button>
+
     
-    <label for="profilePhotoInputLocal" style="display:inline-block;margin-top:6px;">
-      Ganti Foto Profil:
-    </label><br>
-    <input type="file" id="profilePhotoInputLocal" accept="image/*">
-  </div>
-
   <div class="form-group">
     <label for="profileUsername">Nama Pengguna</label>
     <input type="text" id="profileUsername" class="form-control" placeholder="Nama pengguna">
@@ -267,45 +298,66 @@ document.addEventListener("DOMContentLoaded", function () {
 </div>
 
 
-<!-- === MODAL SERVICES === -->
- <nav style="padding:10px;background:#333;color:#fff;">
-    <button onclick="navigateTo('services')" style="padding:6px 12px;">Buka Layanan</button>
-  </nav>
-
-  <div class="page" id="page-services">
-    <section class="service-section">
-      <h2>Layanan Jasa Kami</h2>
-      <p class="service-subtitle">Kami hadir untuk melayani Anda dengan berbagai jasa profesional & terpercaya.</p>
-
-      <div class="service-grid" id="serviceList"></div>
-
-      <div id="serviceDetail" class="service-detail" style="display:none;">
-        <h3 id="detailTitle"></h3>
-        <p id="detailDesc"></p>
-        <button class="btn" onclick="closeServiceDetail()">Tutup</button>
-      </div>
-    </section>
-  </div>
+<!-- === MODAL SERVICES === --><!-- ========== HALAMAN DAFTAR LAYANAN ========== -->
+<div id="serviceList"></div>
+<div id="serviceDetailContent"></div>
+<div style="margin-top:10px;">
+  <button id="adminLoginBox" class="btn" onclick="serviceAdminLogin()">Login Admin</button>
+  <button id="adminLogoutBox" class="btn" onclick="serviceAdminLogout()" style="display:none;">Logout Admin</button>
+</div>
 
 
+<!-- === MODAL HOME DropDownMenu === -->
+ 
+  <!-- ✅ BAGIAN POSTINGAN USER -->
+  <div id="userPostCard" style="margin: 20px 0;"></div>
 
-  <div id="mySitesContent" style="display:none;">
-    <h2>My Sites</h2>
-    <div id="mySitesList"></div>
-  </div>
+ 
+
+<div class="page" id="page-blog" style="display:none;">
+  <div id="blogPosts"></div>
+</div>
+
+
+  <div class="page" id="page-home" style="display:none;"></div>
+  <div class="page" id="page-login" style="display:none;"></div>
+  <div class="page" id="page-schedule" style="display:none;"></div>
+  <div class="page" id="page-shop" style="display:none;"></div>
+  <div class="page" id="page-legal" style="display:none;"></div>
+  <div class="page" id="page-my-profile" style="display:none;"></div>
+  <div class="page" id="page-group-chat" style="display:none;"></div>
+  <div class="page" id="page-admin-panel" style="display:none;"></div>
+  <div class="page" id="page-event-add" style="display:none;"></div>
+  <div class="page" id="page-event-edit" style="display:none;"></div>
+  <div class="page" id="page-full-article" style="display:none;"></div>
+  <div class="page" id="page-invite" style="display:none;"></div>
+  <div class="page" id="page-change-password" style="display:none;"></div>
+  <div class="page" id="page-cart" style="display:none;"></div>
+  <div class="page" id="page-product-detail" style="display:none;"></div>
+  <div class="page" id="page-group-list" style="display:none;"></div>
+  <div class="page" id="page-group-chat-modal" style="display:none;"></div>
+  <div class="page" id="page-legal-content" style="display:none;"></div>
+  <div class="page" id="page-shop-content" style="display:none;"></div>
+  <div class="page" id="page-blog-content" style="display:none;"></div>
+  <div class="page" id="page-schedule-content" style="display:none;"></div>
+  <div class="page" id="page-page-content" style="display:none;"></div>
+  <div class="page" id="page-product-detail-modal" style="display:none;"></div>
+  <div class="page" id="page-group-chat-list" style="display:none;"></div>
+  <div class="page" id="page-group-chat-modal-content" style="display:none;"></div>
+  <div class="page" id="page-invite-modal" style="display:none;"></div>
+  <div class="page" id="page-change-password-modal" style="display:none;"></div>
+  <div class="page" id="page-cart-modal" style="display:none;"></div>
+  <div class="page" id="page-product-detail-modal-content" style="display:none;"></div>
+  <div class="page" id="page-group-list-modal" style="display:none;"></div>
+  <div class="page" id="page-group-chat-modal-content" style="display:none;"></div>
+  <div class="page" id="page-legal-content-modal" style="display:none;"></div>
+
   <div id="shopContent" style="display:none;">
     <h2>Shop</h2>
     <div id="shopProductsList"></div>
     <button class="btn" onclick="loadMoreProducts()">Lihat Semua Produk</button>
     </div>
-  <div id="homeContent">
-    <h2>Selamat Datang di ConsPIndo</h2>
-    <p>Consortium Pioneers Indonesia adalah komunitas inovator dan pengusaha yang berfokus pada pengembangan teknologi dan bisnis di Indonesia.</p>
-    <div id="servicesList"></div>
-    <button class="btn" onclick="loadMoreServices()">Lihat Semua Layanan</button>
-    <div id="blogList"></div>
-    <button class="btn" onclick="loadMoreBlogPosts()">Lihat Semua Blog</button>
-  </div>
+  
   <div id="blogContent" style="display:none;">
     <h2>Blog</h2>
     <div id="blogPosts"></div>
@@ -425,6 +477,7 @@ document.addEventListener("DOMContentLoaded", function () {
   </div>
 
   
+
   <!-- Footer -->
   <div class="footer">
     &copy; 2025 ConsPIndo. All rights reserved.<br/>
@@ -432,22 +485,27 @@ document.addEventListener("DOMContentLoaded", function () {
     <div class="footer-line"></div><br/>
   </div>
 
-  <script src="main.js"></script>
+  <!-- Akhir halaman HTML sebelum </body> -->
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const tabProfile = document.querySelector("#tab-profile");
+    if (tabProfile) {
+      tabProfile.addEventListener("click", function () {
+        authPi(function (user) {
+          const usernameEl = document.querySelector("#username");
+          if (usernameEl) {
+            usernameEl.innerText = user.user.username;
+          }
+        });
+      });
+    }
+  });
+</script>
+
  
-  <style>
-  .btn-row {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-    margin-top: 10px;
-    flex-wrap: wrap;
-  }
-
-  .btn-row .btn {
-    flex: 1 1 auto;
-  }
-</style>
-
+<script src="main.js"></script>
 
 </body>
 </html>
+
