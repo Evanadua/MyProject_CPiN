@@ -25,40 +25,40 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
-<!-- Pi Network SDK (versi 2.0 resmi) -->
+
+<!-- Pi Network SDK -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <script>
-  window.Pi.init({ version: "2.0", sandbox: false });
+window.Pi && window.Pi.init({ version: "2.0", sandbox: false }); // atau true jika memang sandbox
 
-  const ua = navigator.userAgent || "";
-  const isPiBrowser = ua.includes("PiBrowser");
-
-  function piLogin(){
-    if(!window.Pi){
-      alert("Fitur Pi hanya tersedia di dalam Pi Browser.");
-      return;
-    }
-    window.Pi.authenticate(["username"], function(auth, error){
-      if(error){
-        console.error("Autentikasi Pi gagal:", error);
-        return;
-      }
+function piLogin() {
+  // Lebih aman: cek window.Pi saja
+  if (!window.Pi || typeof window.Pi.authenticate !== "function") {
+    alert("Login Pi hanya bisa diakses dari Pi Browser.");
+    return;
+  }
+  window.Pi.authenticate(["username"])
+    .then(function(auth) {
       console.log("User Pi:", auth);
-      document.getElementById("loginStatus").innerText =
-        "Login Pi berhasil: " + auth.user.username;
+      document.getElementById("pageContent").innerHTML = "<h3>Login Pi berhasil: " + auth.user.username + "</h3>";
+    })
+    .catch(function(error) {
+      console.error("Login Pi gagal:", error);
+      alert("Login Pi gagal.");
     });
+}
+
+  function appLogin() {
+    if (typeof showLoginModal === "function") showLoginModal();
+    else if (typeof showAuthModal === "function") showAuthModal(false);
   }
 
-  function appLogin(){
-    if(typeof showLoginModal === 'function') showLoginModal();
-    else if(typeof showAuthModal === 'function') showAuthModal(false);
+  function appRegister() {
+    if (typeof showRegisterModal === "function") showRegisterModal();
+    else if (typeof showAuthModal === "function") showAuthModal(true);
   }
 
-  function appRegister(){
-    if(typeof showRegisterModal === 'function') showRegisterModal();
-    else if(typeof showAuthModal === 'function') showAuthModal(true);
-  }
-
+  
   document.addEventListener("DOMContentLoaded", function(){
     const menu = document.getElementById("loginMenu");
     if(menu){
@@ -70,21 +70,35 @@
           <option value="register">Register App</option>
         </select>
       `;
-
       document.getElementById("loginSelect").addEventListener("change", function(){
-        if(this.value === "pi"){
-          piLogin();
-        } else if(this.value === "app"){
-          appLogin();
-        } else if(this.value === "register"){
-          appRegister();
-        }
+        if (this.value === "pi") piLogin();
+        else if (this.value === "app") appLogin();
+        else if (this.value === "register") appRegister();
         this.value = "";
       });
     }
   });
+})();
 </script>
 
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const pwInput = document.getElementById("loginPassword");
+  const toggle = document.getElementById("togglePassword");
+
+if (pwInput && toggle) {
+    toggle.addEventListener("click", function () {
+      if (pwInput.type === "password") {
+        pwInput.type = "text";
+        toggle.textContent = "🙈"; // icon mata tertutup
+      } else {
+        pwInput.type = "password";
+        toggle.textContent = "👁️"; // icon mata terbuka
+      }
+    });
+  }
+});
+</script>
 
 <body>
   <!-- Header Slider -->
@@ -94,6 +108,7 @@
     <img src="https://raw.githubusercontent.com/Evanadua/MyProject_CPiN/refs/heads/main/assets/images/header3.jpg" class="slide" alt="Header Slide 3" />
   </div>
 
+  
 <script>
  	// JS placeholder
 
@@ -146,6 +161,8 @@ document.addEventListener("DOMContentLoaded", function () {
           <button class="invite" id="inviteBtn">Invite</button>
           <button id="buyNowBtn">Buy Now</button>
           <div id="loginMenu"></div>
+          <div id="loginStatus" style="margin-top:6px;color:green;font-size:0.95em;"></div>
+          <button id="logoutPiBtn" style="display:none;">Logout Pi</button>
         </div>
       </div>
     </div>
@@ -166,6 +183,7 @@ document.addEventListener("DOMContentLoaded", function () {
     <button id="servicesTab">Services</button>
     <button id="blogTab">Blog</button>
   </div>
+  
   
 <div id="adminMemberList"></div>
  <!-- Harus ada 
@@ -248,6 +266,13 @@ document.addEventListener("DOMContentLoaded", function () {
       <div id="groupChatList"></div>
       <button class="btn" onclick="openGroupChat()">Buka Group Chat</button>
       <span class="chat-username" id="groupChatUsername"></span>
+    </div>
+  </div>
+<div class="modal" id="shopModal" style="display:none;">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('shopModal')">&times;</span>
+      <h3>Shop</h3>
+      <div id="shopContent"></div>
     </div>
   </div>
   <div class="main-content">
@@ -354,39 +379,7 @@ document.addEventListener("DOMContentLoaded", function () {
 </div>
 
 
-  <div class="page" id="page-home" style="display:none;"></div>
-  <div class="page" id="page-login" style="display:none;"></div>
-  <div class="page" id="page-schedule" style="display:none;"></div>
-  <div class="page" id="page-shop" style="display:none;"></div>
-  <div class="page" id="page-legal" style="display:none;"></div>
-  <div class="page" id="page-my-profile" style="display:none;"></div>
-  <div class="page" id="page-group-chat" style="display:none;"></div>
-  <div class="page" id="page-admin-panel" style="display:none;"></div>
-  <div class="page" id="page-event-add" style="display:none;"></div>
-  <div class="page" id="page-event-edit" style="display:none;"></div>
-  <div class="page" id="page-full-article" style="display:none;"></div>
-  <div class="page" id="page-invite" style="display:none;"></div>
-  <div class="page" id="page-change-password" style="display:none;"></div>
-  <div class="page" id="page-cart" style="display:none;"></div>
-  <div class="page" id="page-product-detail" style="display:none;"></div>
-  <div class="page" id="page-group-list" style="display:none;"></div>
-  <div class="page" id="page-group-chat-modal" style="display:none;"></div>
-  <div class="page" id="page-legal-content" style="display:none;"></div>
-  <div class="page" id="page-shop-content" style="display:none;"></div>
-  <div class="page" id="page-blog-content" style="display:none;"></div>
-  <div class="page" id="page-schedule-content" style="display:none;"></div>
-  <div class="page" id="page-page-content" style="display:none;"></div>
-  <div class="page" id="page-product-detail-modal" style="display:none;"></div>
-  <div class="page" id="page-group-chat-list" style="display:none;"></div>
-  <div class="page" id="page-group-chat-modal-content" style="display:none;"></div>
-  <div class="page" id="page-invite-modal" style="display:none;"></div>
-  <div class="page" id="page-change-password-modal" style="display:none;"></div>
-  <div class="page" id="page-cart-modal" style="display:none;"></div>
-  <div class="page" id="page-product-detail-modal-content" style="display:none;"></div>
-  <div class="page" id="page-group-list-modal" style="display:none;"></div>
-  <div class="page" id="page-group-chat-modal-content" style="display:none;"></div>
-  <div class="page" id="page-legal-content-modal" style="display:none;"></div>
-
+ 
   <div id="shopContent" style="display:none;">
     <h2>Shop</h2>
     <div id="shopProductsList"></div>
@@ -470,14 +463,19 @@ document.addEventListener("DOMContentLoaded", function () {
     </div>
   </div>
   <!-- === EVENT ADD MODAL === -->
+<!-- EVENT ADD MODAL -->
 <div class="modal" id="eventAddModal" style="display: none;">
   <div class="modal-content">
     <span class="close" onclick="closeModal('eventAddModal')">&times;</span>
     <h3 id="modalTitleAdd">Tambah Event</h3>
     <input type="hidden" id="eventAddId">
     <input type="text" id="eventAddTitle" placeholder="Judul Event">
+    
     <input type="datetime-local" id="eventAddStart">
+    <small style="color:#888;">Start</small>
+    
     <input type="datetime-local" id="eventAddEnd">
+    <small style="color:#888;">End</small>
     <textarea id="eventAddDesc" placeholder="Deskripsi"></textarea>
     <div style="display: flex; justify-content: space-between; margin-top: 10px;">
       <button id="eventAddSaveBtn" onclick="saveNewEvent()">Simpan</button>
@@ -520,24 +518,7 @@ document.addEventListener("DOMContentLoaded", function () {
     <div class="footer-line"></div><br/>
   </div>
 
-  <!-- Akhir halaman HTML sebelum </body> -->
-
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const tabProfile = document.querySelector("#tab-profile");
-    if (tabProfile) {
-      tabProfile.addEventListener("click", function () {
-        authPi(function (user) {
-          const usernameEl = document.querySelector("#username");
-          if (usernameEl) {
-            usernameEl.innerText = user.user.username;
-          }
-        });
-      });
-    }
-  });
-</script>
-
+  
  
 <script src="main.js"></script>
 

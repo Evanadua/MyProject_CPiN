@@ -1215,7 +1215,7 @@ function renderUserPostCard() {
 }
 
 document.getElementById("homeTab").addEventListener("click", () => {
-  showPage("page-home"); // pastikan fungsi showPage bekerja
+  showPage("home"); // pastikan fungsi showPage bekerja
 
   // render post user jika elemen tersedia
   if (document.getElementById("userPostCard")) {
@@ -1326,15 +1326,19 @@ window.addEventListener("click", function(event) {
 
   // Data direksi (semua dalam satu array)
   const direksiData = [
-    { nama: "Ridhwan A.A", jabatan: "Owner / CEO", alamat: "Pekalongan - Jateng", foto: "ridhwan.jpg" },
-    { nama: "SRI MURYANTO", jabatan: "KETUA UMUM (Organisasi)", alamat: "KEDIRI", foto: "sri.jpg" },
+    { nama: "RIDHWAN A.A", jabatan: "Owner / CEO", alamat: "PEKALONGAN - JATENG", foto: "ridhwan.jpg" },
+    { nama: "SRI MURYANTO", jabatan: "KETUA UMUM (Organisasi)", alamat: "KEDIRI - JATIM", foto: "sri.jpg" },
+    { nama: "T CHAIRUL ANWAR", jabatan: "COO (Chief Operating Officer/GM)", alamat: "BANDA ACEH", foto: "anwar.jpg" },
     { nama: "SYAMSU HIDAYAT", jabatan: "BENDAHARA UMUM", alamat: "SAMPANG - MADURA", foto: "syamsu.jpg" },
     { nama: "SAPRIDA, S.Sos.I", jabatan: "SEKRETARIS UMUM", alamat: "LANGSA - ACEH", foto: "saprida.jpg" },
-    { nama: "ASRIN IRFHAN", jabatan: "Direktur HRD", alamat: "Brebes - Jateng", foto: "asrin.jpg" },
-    { nama: "DEDI RAHMAT", jabatan: "Direktur PR", alamat: "Bireuen - ACEH", foto: "dedi.jpg" },
-    { nama: "MUHAMAD AFRIZAL", jabatan: "CMO (Chief Marketing Officer)", alamat: "Sumatra Selatan", foto: "afrizal.jpg" },
+    { nama: "TANTI HANDAYANI", jabatan: "SEKRETARIS PERUSAHAAN", alamat: "BANDUNG - JABAR", foto: "tanty.jpg" },
+    { nama: "ASRIN IRFHAN", jabatan: "DIREKTUR HRD", alamat: "BREBES - JATENG", foto: "asrin.jpg" },
+    { nama: "DEDI RAHMAT", jabatan: "DIREKTUR PR", alamat: "BIREUEN - ACEH", foto: "dedi.jpg" },
+    { nama: "MUHAMAD AFRIZAL", jabatan: "CMO (Chief Marketing Officer)", alamat: "SUMATRA SELATAN", foto: "afrizal.jpg" },
+    { nama: "JONES B SIMBOLON", jabatan: "ADVOKASI dan HUKUM", alamat: "PEKALONGAN - JATENG", foto: "jones.jpg" },
+    { nama: "NONCE FENTY PADJA", jabatan: "IRD (International Relation Div)", alamat: "Nunhila-Alak-NTT", foto: "nonny.jpg" },
     { nama: "(Kosong)", jabatan: "CTO (Chief Technology Officer)", alamat: "(Belum ditentukan)", foto: "default.jpg" },
-    { nama: "(Kosong)", jabatan: "COO (Chief Operating Officer)", alamat: "(Belum ditentukan)", foto: "default.jpg" }
+    { nama: "(Kosong)", jabatan: "CSR (Corporate Social Responsibility)", alamat: "(Belum ditentukan)", foto: "default.jpg" }
   ];
 
   // Fungsi buat 1 kartu direksi
@@ -1342,7 +1346,7 @@ window.addEventListener("click", function(event) {
     const fotoURL = `https://raw.githubusercontent.com/Evanadua/MyProject_CPiN/main/assets/images/direksi/${data.foto}`;
     return `
       <div class="card">
-        <img src="${fotoURL}" alt="${data.nama}" 
+        <img src="${fotoURL}" alt="${data.foto}" 
              style="border-radius:50%; width:100px; height:100px; object-fit:cover; margin-bottom:10px;">
         <h4>${data.nama}</h4>
         <p><strong>${data.jabatan}</strong></p>
@@ -1418,7 +1422,7 @@ window.addEventListener("click", function(event) {
 
   else if (type === 'harian') {
     content.innerHTML = `
-      <h3>STRUKTUR PENGURUS HARIAN</h3>
+      <h3>STRUKTUR - OPERASIONAL</h3>
       <img src="assets/images/struktur-pengurus-harian.png" alt="Struktur Pengurus Harian" style="width:100%; max-width:800px; border-radius:10px; margin-top:15px;" />
     `;
   }
@@ -1498,7 +1502,8 @@ const pages = {
 
     `,
   home: `
-       <div class="page" id="page-home" style="display: none;">
+       <div class="page" id="page-home">
+       <div id="home"></div>
   <h2>Selamat Datang</h2>
   <p style="font-size:1.05em; color:#333; margin-bottom:8px;">
     Welcome to ConsPIndo App. Empowering Pi Network Community Connections through Knowledge and Innovation.<br>
@@ -1511,7 +1516,7 @@ const pages = {
     <div class="dropdown-content">
        <a href="#" onclick="showPengurusModal('company')">Perusahaan</a>
        <a href="#" onclick="showPengurusModal('direksi')">Direksi</a>
-       <a href="#" onclick="showPengurusModal('harian')">Pengurus Harian</a>
+       <a href="#" onclick="showPengurusModal('harian')">Struktur Operasional</a>
     </div>
   </div>
 
@@ -1526,6 +1531,7 @@ const pages = {
   `,
   
   schedule: `
+        <div class="page" id="page-schedule">
         <div id="calendar"></div>
         <div id="eventModal" style="display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; background:#0005; align-items:center; justify-content:center; z-index:9999;">
             <form id="eventForm" style="background:#fff; padding:20px; border-radius:8px; min-width:260px;">
@@ -1552,11 +1558,11 @@ const pages = {
         </div>
     `,
   services: ` 
-  
-  <div id="serviceList"></div>
-  <div id="serviceDetailContent"></div>
-  
-  <h2>Daftar Layanan</h2>
+  <div class="page" id="page-services">
+    <div id="serviceList"></div>
+    <div id="serviceDetailContent"></div>
+
+    <h2>Daftar Layanan</h2>
 
   <!-- Admin Login/Logout -->
   <div id="adminLoginBox">
@@ -1599,6 +1605,8 @@ const pages = {
     `,
 
   blog: `
+        <div class="page" id="page-blog">
+        <div id="blog"></div>
         <div id="blog" class="tab-content">
             <h2 id="blogTitle">Blog</h2>
             <button id="addArticleButton" class="btn" onclick="showArticleForm()">Tambah Artikel</button>
@@ -1615,6 +1623,8 @@ const pages = {
     `,
        
   profile: `
+         <div class="page" id="page-profile">
+         <div id="profile"></div>
         <h2>My Profile</h2>
         <div style="text-align:center;margin-bottom:12px;">
             <img id="profilePhoto" src="" alt="Foto Profil">
@@ -1638,7 +1648,8 @@ const pages = {
 
     legal: `
     <div class="page" id="page-legal" style="display: none;">
-  <h2>Informasi Legal</h2>
+    <div id="legal"></div>
+    <h2>Informasi Legal</h2>
 
   <!-- Dropdown Kebijakan -->
   <div class="dropdown" style="margin-top: 20px;">
@@ -1659,11 +1670,15 @@ const pages = {
  `,
 
   group: `
+        <div class="page" id="page-group">
+    <div id="group"></div>
         <h2>Group List</h2>
         <div id="adminGroupBtns"></div>
         <div id="groupList"></div>
     `,
   shop: `
+        <div class="page" id="page-shop">
+        <div id="shop"></div>     
         <h2>Shop / MarketPlace</h2>
         <div id="adminShopBtns"></div>
         <div style="margin-bottom:10px;">
@@ -1927,18 +1942,15 @@ function deleteService(id) {
 
 // === INITIALIZE ===
 
-
-
-// Function to initialize the schedule calendar
-// ✅ Function to initialize the schedule calendar
+// --- Jadwal/Schedule/Event Section ---
+// Inisialisasi Kalender Jadwal
 function initScheduleCalendar() {
   const calendarEl = document.getElementById("calendar");
   if (!calendarEl) {
     console.warn("Elemen #calendar tidak ditemukan!");
     return;
   }
-
-  calendarEl.innerHTML = ""; // Clear kontainer sebelum render ulang
+  calendarEl.innerHTML = "";
 
   firestore
     .collection("events")
@@ -1955,44 +1967,55 @@ function initScheduleCalendar() {
         };
       });
 
-      // ✅ Inisialisasi Kalender setelah data didapat
       const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: "dayGridMonth",
         events: events,
         dateClick: function (info) {
-          openEventAddModal({
-            start: info.dateStr,
-          });
+          openEventAddModal({ start: info.dateStr });
         },
         eventClick: function (info) {
+          // Konversi waktu ke format lokal untuk input datetime-local
+          const startDate = info.event.start;
+          const endDate = info.event.end;
+          // Format ke yyyy-MM-ddTHH:mm (format input datetime-local)
+          function toLocalInputValue(date) {
+            if (!date) return "";
+            const offset = date.getTimezoneOffset();
+            const localDate = new Date(date.getTime() - offset * 60000);
+            return localDate.toISOString().slice(0, 16);
+          }
           openEventEditModal({
             id: info.event.id,
             title: info.event.title,
-            titleInput: info.event.title,
-            start: info.event.start.toISOString().slice(0, 16),
-            end: info.event.end
-              ? info.event.end.toISOString().slice(0, 16)
-              : "",
-            deleteBtn: info.event.extendedProps?.deleteBtn || "",
+            start: toLocalInputValue(startDate),
+            end: endDate ? toLocalInputValue(endDate) : "",
             description: info.event.extendedProps?.description || "",
           });
         },
       });
 
-      calendar.render(); // ✅ Jangan lupa render!
+      calendar.render();
     })
     .catch((error) => {
       console.error("Gagal mengambil data events:", error);
     });
 }
 
-// ✅ Buka Modal Edit Event
-function openEventEditModal(eventData = {}) {
-  if (!eventData || typeof eventData !== "object") {
-    console.warn("Data event tidak valid!");
-    return;
-  }
+// Buka Modal Tambah Event
+function openEventAddModal(eventData = {}) {
+  const modal = document.getElementById("eventAddModal");
+  if (!modal) return;
 
+  document.getElementById("eventAddId").value = "";
+  document.getElementById("eventAddTitle").value = "";
+  document.getElementById("eventAddStart").value = eventData.start || "";
+  document.getElementById("eventAddEnd").value = "";
+  document.getElementById("eventAddDesc").value = "";
+  modal.style.display = "flex";
+}
+
+// Buka Modal Edit Event
+function openEventEditModal(eventData = {}) {
   const modal = document.getElementById("eventEditModal");
   if (!modal) return;
 
@@ -2004,7 +2027,15 @@ function openEventEditModal(eventData = {}) {
   const descInput = document.getElementById("eventEditDesc");
   const deleteBtn = document.getElementById("eventEditDeleteBtn");
 
-  if (!title || !idInput || !titleInput || !startInput || !descInput) {
+  if (
+    !title ||
+    !idInput ||
+    !titleInput ||
+    !startInput ||
+    !endInput ||
+    !descInput ||
+    !deleteBtn
+  ) {
     console.warn("Input dalam #eventEditModal tidak lengkap!");
     return;
   }
@@ -2017,20 +2048,35 @@ function openEventEditModal(eventData = {}) {
   endInput.value = eventData.end || "";
   descInput.value = eventData.description || "";
 
+  // Tampilkan tombol hapus hanya jika event sudah lewat
   if (eventData.end) {
     const endDate = new Date(eventData.end);
     const now = new Date();
     const isPast = endDate < now;
-
     deleteBtn.style.display = isPast ? "inline-block" : "none";
     deleteBtn.disabled = !isPast;
   } else {
     deleteBtn.style.display = "none";
   }
+
+  // Handler tombol hapus event
+  deleteBtn.onclick = function () {
+    const id = idInput.value;
+    if (id && confirm("Yakin ingin menghapus jadwal ini?")) {
+      firestore
+        .collection("events")
+        .doc(id)
+        .delete()
+        .then(() => {
+          closeModal("eventEditModal");
+          initScheduleCalendar();
+        });
+    }
+  };
 }
 
+// Simpan Event Baru
 function saveNewEvent() {
-  const id = document.getElementById("eventAddId").value;
   const title = document.getElementById("eventAddTitle").value;
   const start = document.getElementById("eventAddStart").value;
   const end = document.getElementById("eventAddEnd").value;
@@ -2045,7 +2091,7 @@ function saveNewEvent() {
     title,
     start: firebase.firestore.Timestamp.fromDate(new Date(start)),
     end: end ? firebase.firestore.Timestamp.fromDate(new Date(end)) : null,
-    description,
+    description: desc,
   };
 
   firestore
@@ -2053,7 +2099,7 @@ function saveNewEvent() {
     .add(eventData)
     .then(() => {
       closeModal("eventAddModal");
-      initScheduleCalendar(); // refresh kalender
+      initScheduleCalendar();
       alert("Jadwal berhasil disimpan!");
     })
     .catch((err) => {
@@ -2061,6 +2107,37 @@ function saveNewEvent() {
       alert("Terjadi kesalahan saat menyimpan event.");
     });
 }
+
+// Simpan Edit Event
+function saveEventEdit() {
+  const id = document.getElementById("eventEditId").value;
+  const title = document.getElementById("eventEditTitle").value;
+  const start = document.getElementById("eventEditStart").value;
+  const end = document.getElementById("eventEditEnd").value;
+  const desc = document.getElementById("eventEditDesc").value;
+
+  if (!id || !title || !start) {
+    alert("ID, Judul, dan Tanggal mulai wajib diisi!");
+    return;
+  }
+
+  const eventData = {
+    title,
+    start: firebase.firestore.Timestamp.fromDate(new Date(start)),
+    end: end ? firebase.firestore.Timestamp.fromDate(new Date(end)) : null,
+    description: desc,
+  };
+
+  firestore
+    .collection("events")
+    .doc(id)
+    .update(eventData)
+    .then(() => {
+      closeModal("eventEditModal");
+      initScheduleCalendar();
+    });
+}
+
 
 // Logo and Header Functions
 /*
@@ -2194,6 +2271,7 @@ if (currentPageEl) {
 
 
   // 4. Inisialisasi khusus berdasarkan halaman
+
   if (page === "group") {
     setTimeout(() => {
       renderGroupList();
@@ -2469,120 +2547,6 @@ function setupEventHandlers() {
   }
 }
 
-function openEventAddModal(eventData = {}) {
-  const modal = document.getElementById("eventAddModal");
-  if (!modal) return;
-
-  document.getElementById("eventAddId").value = "";
-  document.getElementById("eventAddTitle").value = "";
-  document.getElementById("eventAddStart").value = eventData.start || "";
-  document.getElementById("eventAddEnd").value = "";
-  document.getElementById("eventAddDesc").value = "";
-  modal.style.display = "flex";
-}
-
-function openEventEditModal(eventData = {}) {
-  const modal = document.getElementById("eventEditModal");
-  if (!modal) return;
-
-  const title = document.getElementById("modalTitleEdit");
-  const idInput = document.getElementById("eventEditId");
-  const titleInput = document.getElementById("eventEditTitle");
-  const startInput = document.getElementById("eventEditStart");
-  const endInput = document.getElementById("eventEditEnd");
-  const descInput = document.getElementById("eventEditDesc");
-  const deleteBtn = document.getElementById("eventEditDeleteBtn");
-
-  if (
-    !title ||
-    !idInput ||
-    !titleInput ||
-    !startInput ||
-    !endInput ||
-    !descInput ||
-    !deleteBtn
-  ) {
-    console.warn("Input dalam #eventEditModal tidak lengkap!");
-    return;
-  }
-
-  modal.style.display = "flex";
-  title.innerText = "Edit Jadwal";
-  idInput.value = eventData.id || "";
-  titleInput.value = eventData.title || "";
-  startInput.value = eventData.start || "";
-  endInput.value = eventData.end || "";
-  descInput.value = eventData.description || "";
-
-  if (eventData.end) {
-    const endDate = new Date(eventData.end);
-    const now = new Date();
-    const isPast = endDate < now;
-    deleteBtn.style.display = isPast ? "inline-block" : "none";
-    deleteBtn.disabled = !isPast;
-  } else {
-    deleteBtn.style.display = "none";
-  }
-}
-
-function saveNewEvent() {
-  const id = document.getElementById("eventAddId").value;
-  const title = document.getElementById("eventAddTitle").value;
-  const start = document.getElementById("eventAddStart").value;
-  const end = document.getElementById("eventAddEnd").value;
-  const desc = document.getElementById("eventAddDesc").value;
-
-  if (!title || !start) {
-    alert("Judul dan tanggal mulai wajib diisi!");
-    return;
-  }
-
-  const eventData = {
-    title,
-    start: firebase.firestore.Timestamp.fromDate(new Date(start)),
-    end: end ? firebase.firestore.Timestamp.fromDate(new Date(end)) : null,
-    description: desc,
-  };
-
-  firestore
-    .collection("events")
-    .add(eventData)
-    .then(() => {
-      closeModal("eventAddModal");
-      initScheduleCalendar();
-    });
-}
-
-function saveEventEdit() {
-  const id = document.getElementById("eventEditId").value;
-  const title = document.getElementById("eventEditTitle").value;
-  const start = document.getElementById("eventEditStart").value;
-  const end = document.getElementById("eventEditEnd").value;
-  const desc = document.getElementById("eventEditDesc").value;
-
-  if (!id || !title || !start) {
-    alert("ID, Judul, dan Tanggal mulai wajib diisi!");
-    return;
-  }
-
-  const eventData = {
-    title,
-    start: firebase.firestore.Timestamp.fromDate(new Date(start)),
-    end: end ? firebase.firestore.Timestamp.fromDate(new Date(end)) : null,
-    description: desc,
-  };
-
-  firestore
-    .collection("events")
-    .doc(id)
-    .update(eventData)
-    .then(() => {
-      closeModal("eventEditModal");
-      initScheduleCalendar();
-    });
-}
-// Setup event handlers
-setupEventHandlers();
 
 // Let Firebase Auth State Observer handle authentication
 // The auth state observer will show the appropriate content
@@ -2604,6 +2568,7 @@ function setupEventHandlers() {
     }
   });
 
+  
   // Bottom nav
   const legalMenu = document.getElementById("legalMenu");
   if (legalMenu) {
@@ -3253,15 +3218,21 @@ function setActiveTab(tabId) {
   if (tab) tab.classList.add("active");
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const myProfileMenu = document.getElementById("myProfileMenu");
-  if (myProfileMenu) {
-    myProfileMenu.onclick = (e) => {
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+    item.addEventListener('click', function (e) {
       e.preventDefault();
-      setActiveTab("profileMenuBtn");
-      showPage("profile");
-    };
-  }
+      // Hapus .active dari semua nav-item
+      document.querySelectorAll('.bottom-nav .nav-item').forEach(nav => nav.classList.remove('active'));
+      // Tambahkan .active ke tombol yang diklik
+      this.classList.add('active');
+      // (Opsional) Panggil fungsi showPage sesuai id tombol
+      if (this.id === "legalMenu") showPage("legal");
+      if (this.id === "groupMenu") showPage("group");
+      if (this.id === "shopMenu") showPage("shop");
+      if (this.id === "myProfileMenu") showPage("profile");
+    });
+  });
 });
 
 document.addEventListener("DOMContentLoaded", function () {
