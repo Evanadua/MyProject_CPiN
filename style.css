@@ -1900,3 +1900,248 @@ body {
 .company-profile li {
   margin-bottom: 5px;
 }
+
+
+/* === New Script === */
+
+/* ===== ConsPIndo — Semi-Light Modern UI (responsive) ===== */
+
+/* CSS Variables (semi-light theme) */
+:root{
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+  --muted: #eef0f6;
+  --text: #1f2937;
+  --text-soft:#6b7280;
+  --brand: #6b5cff;            /* ungu lembut */
+  --brand-2:#7fdbca;           /* mint */
+  --accent:#ffb703;            /* amber lembut */
+  --danger:#ef4444;
+  --ring: rgba(107,92,255,.25);
+
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 10px 24px rgba(16,24,40,.06);
+  --shadow-sm: 0 4px 14px rgba(16,24,40,.06);
+}
+
+/* Reset ringan */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial;
+  color:var(--text);
+  background:var(--bg);
+  line-height:1.45;
+}
+
+/* ===== Avatar: turun ke bawah slider ===== */
+#userAvatarContainer {
+  position: absolute;          /* dari fixed ke absolute */
+  top: 105px;                   /* turun ke bawah slider, sesuaikan dengan tinggi slider */
+  right: 20px;                 /* sedikit lebih ke kanan */
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-title{
+  font-size: clamp(22px, 2.5vw, 28px);
+  font-weight: 800;
+  letter-spacing:.1px;
+  margin-left: 20px;     /* geser judul ke kanan */
+  margin-top: 0;
+}
+.header-desc{
+  color: var(--text-soft);
+  margin-left: 20px;     /* geser judul ke kanan */
+  margin-top: 2px;
+}
+.header-info{
+  margin-top:6px; color: var(--text-soft); font-size: 14px;
+  margin-left: 20px;     /* geser judul ke kanan */
+}
+.header-btns{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  margin-left: 10px;     /* geser judul ke kanan */
+}
+
+
+/* ===== Tab menu (atas) ===== */
+.tab-menu{
+  display:flex; gap:6px; overflow:auto; padding: 4px 2px; margin: 4px 0 12px;
+}
+.tab-menu::-webkit-scrollbar{height:6px}
+.tab-menu::-webkit-scrollbar-thumb{background:#d9deea;border-radius:999px}
+.tab-menu button{
+  appearance:none; border:1px solid #e7ebf4; background:#fff; color:var(--text);
+  padding:6px 12px; border-radius:999px; cursor:pointer; font-weight:500;
+  box-shadow: var(--shadow-sm);
+  transition: transform .06s ease, border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  white-space:nowrap;
+}
+.tab-menu button:hover{ transform: translateY(-1px); box-shadow: var(--shadow) }
+.tab-menu button.active{
+  background: linear-gradient(180deg, #fff, #f7f8ff);
+  border-color: #d9dcff;
+  box-shadow: 0 0 0 4px var(--ring);
+  color: #3f3ab9;
+}
+
+/* ===== Buttons ===== */
+button, .btn{
+  appearance:none; border:1px solid #e6e9f2; background:#fff; color:var(--text);
+  padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:600;
+  box-shadow: var(--shadow-sm);
+  transition: transform .06s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+}
+button:hover,.btn:hover{transform:translateY(-1px); box-shadow: var(--shadow)}
+button.invite{
+  background: linear-gradient(180deg, #fff, #f7f8ff);
+  border-color:#dfe2ff; color:#3f3ab9;
+}
+.btn.delete-btn{ border-color: #ffe0e0; color:#b42318; background:#fff5f5 }
+.btn.delete-btn:hover{ background:#ffe9e9 }
+
+/* Inputs */
+input, textarea, select{
+  width:100%; padding:10px 12px; border-radius:12px; border:1px solid #e6e9f2; outline:none;
+  background:#fff; color:var(--text); transition: box-shadow .2s ease, border-color .2s ease;
+}
+input:focus, textarea:focus, select:focus{
+  border-color:#c9ccff; box-shadow:0 0 0 4px var(--ring);
+}
+
+/* ===== Cards & grids ===== */
+.card, .service-card, .member-card, .group-item{
+  background: var(--surface);
+  border:1px solid #e9edf4;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  padding: 14px;
+}
+.member-list, .group-list{ display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:12px }
+
+/* Shop grid (dipakai JS) */
+
+@media (max-width: 600px) {
+  .shop-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+}
+.shop-tile{
+  background:var(--surface);
+  border:1px solid #e9edf4;
+  border-radius:14px;
+  box-shadow: var(--shadow-sm);
+  padding:12px;
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  transition: transform .06s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.shop-tile:hover{ transform: translateY(-2px); box-shadow: var(--shadow); border-color:#dfe2ff }
+.shop-tile img{
+  width:96px; height:96px; object-fit:cover; border-radius:12px; background:#f2f4fb; border:1px solid #eef0f6;
+}
+.prod-name{ font-weight:700; text-align:center; font-size:14.5px }
+.prod-price{ color:#0f766e; font-weight:700 }
+.prod-stock{ font-size:12px; color:var(--text-soft) }
+.prod-location{ font-size:12px; color:var(--text-soft) }
+.prod-actions button{ width:100%; margin-top:6px }
+
+/* ===== Blog ===== */
+.blog-post{
+  padding:12px; border:1px solid #e9edf4; border-radius:14px; background:#fff; box-shadow:var(--shadow-sm)
+}
+.blog-post + hr{ border:0; border-top:1px dashed #e9edf4; margin:14px 0 }
+
+/* ===== Modals (umum) ===== */
+.modal{
+  position:fixed; inset:0; display:none; place-items:center; z-index:1000;
+  background: rgba(17,24,39,.25); backdrop-filter: blur(3px);
+  padding:16px;
+}
+.modal .modal-content{
+  width:100%; max-width:540px; background:#fff; border:1px solid #ebeff6;
+  border-radius: 18px; box-shadow: var(--shadow);
+  padding:16px;
+}
+.modal .close{
+  float:right; cursor:pointer; font-size:20px; color:#9aa1af;
+}
+.active-modal{ display:grid }
+
+/* ===== Bottom nav ===== */
+.bottom-nav{
+  position:fixed; left: 4px;; right: 4px;; bottom: 8px;; z-index:900;
+  display:grid; grid-template-columns: repeat(4, 1fr);
+  gap:5px; padding:8px 10px;
+  background: rgba(255,255,255,.85); backdrop-filter: blur(8px);
+  border-top:1px solid #e9edf4;
+}
+.bottom-nav .nav-item{
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  text-decoration:none; color:var(--text-soft); font-size:14px; padding:8px 6px;
+  border-radius:12px; border:1px solid transparent; transition: background .2s, color .2s, border-color .2s;
+}
+.bottom-nav .nav-item i{ font-size:18px }
+.bottom-nav .nav-item.active, .bottom-nav .nav-item:hover{
+  background:#f7f8ff; color:#3f3ab9; border-color:#dfe2ff;
+}
+
+/* ===== Dropdown (About/Policy) ===== */
+.dropdown{ position:relative; display:inline-block }
+.dropdown-button{
+  background:#fff; border:1px solid #e7ebf4; border-radius:999px; padding:8px 12px; font-weight:600;
+}
+.dropdown-content{
+  display:none; position:absolute; z-index:30; min-width:220px; margin-top:8px;
+  background:#fff; border:1px solid #e9edf4; border-radius:14px; box-shadow: var(--shadow);
+  overflow:hidden;
+}
+.dropdown-content a{
+  display:block; padding:10px 12px; color:var(--text); text-decoration:none; border-bottom:1px solid #f2f4fb;
+}
+.dropdown-content a:hover{ background:#f7f8ff }
+
+/* ===== Calendar (FullCalendar tweak) ===== */
+.fc{ --fc-border-color:#edf1f7; --fc-button-bg:#fff; --fc-button-border-color:#e6e9f2; --fc-button-text-color:#3f3ab9; }
+.fc .fc-toolbar-title{ font-size:16px; font-weight:800 }
+.fc .fc-button{
+  padding:6px 10px; border-radius:10px; box-shadow: var(--shadow-sm);
+}
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:focus{ box-shadow:0 0 0 4px var(--ring) }
+
+/* ===== Chat bubbles ===== */
+.chat-bubble{
+  padding:10px 12px; border-radius:14px; color:#fff; margin-bottom:8px; position:relative;
+  box-shadow: var(--shadow-sm);
+}
+.chat-username{ font-size:12px; opacity:.9; margin-bottom:4px }
+.chat-timestamp{ position:absolute; right:8px; bottom:6px; font-size:10px; opacity:.8 }
+
+/* ===== Footer ===== */
+.footer{
+  text-align:center; color:var(--text-soft); font-size:13px; padding:20px 12px 20px;
+}
+.footer .footer-line{
+  height:1px; background:linear-gradient(90deg, transparent, #e9edf4, transparent);
+  margin-top:8px;
+}
+
+/* ===== Utilities ===== */
+.btn-row{ display:flex; gap:8px; flex-wrap:wrap }
+.page{ display:block }
+hr{ border:0; border-top:1px dashed #e9edf4 }
+small, .muted{ color:var(--text-soft) }
+
+/* Mobile optimizations */
+@media (max-width: 480px){
+  .header .header-row{ align-items:flex-start }
+  #header-slider{ height: 100px }
+}
+

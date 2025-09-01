@@ -43,13 +43,13 @@ style.textContent = `
     flex-direction: column;
     align-items: center;
   }
-    .shop-tile img {
+  .shop-tile img {
   width: 90px;
   height: 90px;
   object-fit: cover;
   border-radius: 6px;
   margin-bottom: 8px;
-}
+  }
 
   .prod-name {
     font-weight: bold;
@@ -150,7 +150,133 @@ function addToCart(productId) {
           stock: prod.stock - 1,
         })
         .then(() => renderShopProducts());
-      alert("Produk ditambahkan ke keranjang.");
+      
+      // Show payment options if Pi Network is available
+      if (prod.currency === 'PI' && window.Pi) {
+        showPiPaymentOption(prod);
+      } else {
+        alert("Produk ditambahkan ke keranjang.");
+      }
+    });
+}
+
+// Pi Network Payment Integration
+function showPiPaymentOption(product) {
+  const payNow = confirm(`Produk ditambahkan ke keranjang.\n\nIngin bayar langsung dengan Pi Coin?\nHarga: π ${product.price}`);
+  
+  if (payNow) {
+    processPiPayment(product);
+  }
+}
+
+function processPiPayment(product) {
+  if (!window.Pi) {
+    alert("Pi Network tidak tersedia. Gunakan Pi Browser untuk pembayaran Pi.");
+    return;
+  }
+  
+  const piUser = localStorage.getItem('piUser');
+  if (!piUser) {
+    alert("Silakan login dengan Pi Network terlebih dahulu.");
+    return;
+  }
+  
+  // Create payment object
+  const paymentData = {
+    amount: product.price,
+    memo: `Payment for ${product.name} - ConsPIndo Shop`,
+    metadata: {
+      productId: product.id || 'unknown',
+      productName: product.name,
+      quantity: 1,
+      timestamp: new Date().toISOString(),
+      appName: 'ConsPIndo'
+    }
+  };
+  
+  // Process Pi payment
+  window.Pi.createPayment(paymentData, {
+    onReadyForServerApproval: function(paymentId) {
+      console.log('Payment ready for approval:', paymentId);
+      
+      // Here you would typically call your backend to approve the payment
+      // For demo purposes, we'll simulate approval
+      simulatePaymentApproval(paymentId, product);
+    },
+    onReadyForServerCompletion: function(paymentId, txid) {
+      console.log('Payment ready for completion:', paymentId, txid);
+      
+      // Complete the payment
+      completePiPayment(paymentId, txid, product);
+    },
+    onCancel: function(paymentId) {
+      console.log('Payment cancelled:', paymentId);
+      alert('Pembayaran dibatalkan.');
+    },
+    onError: function(error, payment) {
+      console.error('Payment error:', error, payment);
+      alert('Terjadi kesalahan dalam pembayaran: ' + error.message);
+    }
+  })
+  .then(function(payment) {
+    console.log('Payment created:', payment);
+  })
+  .catch(function(error) {
+    console.error('Failed to create payment:', error);
+    alert('Gagal membuat pembayaran Pi: ' + error.message);
+  });
+}
+
+function simulatePaymentApproval(paymentId, product) {
+  // In a real app, this would be done by your backend server
+  setTimeout(() => {
+    window.Pi.approvePayment(paymentId)
+      .then(function(payment) {
+        console.log('Payment approved:', payment);
+      })
+      .catch(function(error) {
+        console.error('Payment approval failed:', error);
+        alert('Persetujuan pembayaran gagal: ' + error.message);
+      });
+  }, 2000);
+}
+
+function completePiPayment(paymentId, txid, product) {
+  // In a real app, this would verify the transaction on Pi blockchain
+  window.Pi.completePayment(paymentId)
+    .then(function(payment) {
+      console.log('Payment completed:', payment);
+      
+      // Save transaction to Firestore
+      const transactionData = {
+        paymentId: paymentId,
+        txid: txid,
+        productId: product.id,
+        productName: product.name,
+        amount: product.price,
+        currency: 'PI',
+        status: 'completed',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        piUser: JSON.parse(localStorage.getItem('piUser') || '{}').username || 'unknown'
+      };
+      
+      firestore.collection('transactions').add(transactionData)
+        .then(() => {
+          alert(`Pembayaran berhasil!\n\nTx ID: ${txid}\nProduk: ${product.name}\nJumlah: π ${product.price}`);
+          
+          // Remove item from cart
+          let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+          cart = cart.filter(item => item.id !== product.id);
+          localStorage.setItem("cart", JSON.stringify(cart));
+          updateCartCount();
+        })
+        .catch(error => {
+          console.error('Failed to save transaction:', error);
+        });
+    })
+    .catch(function(error) {
+      console.error('Payment completion failed:', error);
+      alert('Penyelesaian pembayaran gagal: ' + error.message);
     });
 }
 
@@ -1944,6 +2070,7 @@ function deleteService(id) {
 
 // --- Jadwal/Schedule/Event Section ---
 // Inisialisasi Kalender Jadwal
+
 function initScheduleCalendar() {
   const calendarEl = document.getElementById("calendar");
   if (!calendarEl) {
@@ -1967,40 +2094,97 @@ function initScheduleCalendar() {
         };
       });
 
-      const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: "dayGridMonth",
+      let calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek,listWeek'
+        },
         events: events,
-        dateClick: function (info) {
-          openEventAddModal({ start: info.dateStr });
+        selectable: true,
+        editable: true,
+        select: function(info) {
+          openModal('eventModal');
+          const form = document.getElementById('eventForm');
+          form.reset();
+          document.getElementById('modalTitle').innerText = 'Tambah Jadwal';
+          document.getElementById('eventId').value = '';
+          document.getElementById('eventStart').value = info.startStr.slice(0,16);
+          document.getElementById('eventEnd').value = info.endStr ? info.endStr.slice(0,16) : '';
+          document.getElementById('deleteBtn').style.display = 'none';
+          window.editingEvent = null;
         },
-        eventClick: function (info) {
-          // Konversi waktu ke format lokal untuk input datetime-local
-          const startDate = info.event.start;
-          const endDate = info.event.end;
-          // Format ke yyyy-MM-ddTHH:mm (format input datetime-local)
-          function toLocalInputValue(date) {
-            if (!date) return "";
-            const offset = date.getTimezoneOffset();
-            const localDate = new Date(date.getTime() - offset * 60000);
-            return localDate.toISOString().slice(0, 16);
-          }
-          openEventEditModal({
-            id: info.event.id,
-            title: info.event.title,
-            start: toLocalInputValue(startDate),
-            end: endDate ? toLocalInputValue(endDate) : "",
-            description: info.event.extendedProps?.description || "",
-          });
+        eventClick: function(info) {
+          showScheduleDetail(info.event);
         },
+        eventDrop: function(info) {
+          updateEvent(info.event);
+        },
+        eventResize: function(info) {
+          updateEvent(info.event);
+        }
       });
 
       calendar.render();
+
+      // Handler untuk form submit
+      const form = document.getElementById('eventForm');
+      if (form) {
+        form.onsubmit = function(e) {
+          e.preventDefault();
+          let id = document.getElementById('eventId').value;
+          let title = document.getElementById('eventTitle').value;
+          let start = document.getElementById('eventStart').value;
+          let end = document.getElementById('eventEnd').value;
+          let desc = document.getElementById('eventDesc').value;
+
+          if (id) {
+            let event = calendar.getEventById(id);
+            if (event) {
+              event.setProp('title', title);
+              event.setStart(start);
+              event.setEnd(end || null);
+              event.setExtendedProp('description', desc);
+              updateEvent(event);
+            }
+          } else {
+            let newEvent = {
+              title: title,
+              start: start,
+              end: end || null,
+              description: desc
+            };
+            firestore.collection("events").add({
+              ...newEvent,
+              start: firebase.firestore.Timestamp.fromDate(new Date(start)),
+              end: end ? firebase.firestore.Timestamp.fromDate(new Date(end)) : null,
+            }).then(docRef => {
+              newEvent.id = docRef.id;
+              calendar.addEvent(newEvent);
+            });
+          }
+          closeModal('eventModal');
+        };
+      }
+
+      function updateEvent(event) {
+        firestore.collection("events").doc(event.id).update({
+          title: event.title,
+          start: firebase.firestore.Timestamp.fromDate(new Date(event.start)),
+          end: event.end ? firebase.firestore.Timestamp.fromDate(new Date(event.end)) : null,
+          description: event.extendedProps.description || "",
+        });
+      }
+
+      window.showScheduleDetail = function(event) {
+        alert("Judul: " + event.title + "\nDeskripsi: " + (event.extendedProps.description || ""));
+      };
     })
     .catch((error) => {
       console.error("Gagal mengambil data events:", error);
     });
 }
-
 // Buka Modal Tambah Event
 function openEventAddModal(eventData = {}) {
   const modal = document.getElementById("eventAddModal");
@@ -2355,85 +2539,6 @@ document.getElementById("registerBtn").onclick = () => {
   }
   registerUser(email, password);
 };
-
-const eventForm = document.getElementById("eventForm");
-if (eventForm) {
-  eventForm.onsubmit = function (e) {
-    e.preventDefault();
-    const id = document.getElementById("eventId").value;
-    const title = document.getElementById("eventTitle").value;
-    const start = document.getElementById("eventStart").value;
-    const end = document.getElementById("eventEnd").value;
-    const description = document.getElementById("eventDesc").value;
-
-    const deleteBtn = document.getElementById("deleteBtn");
-    if (deleteBtn) {
-      deleteBtn.onclick = function () {
-        const id = document.getElementById("eventId").value;
-        if (id && confirm("Yakin ingin menghapus jadwal ini?")) {
-          firestore
-            .collection("events")
-            .doc(id)
-            .delete()
-            .then(() => {
-              closeModal("eventModal");
-              initScheduleCalendar(); // 🔁 Refresh kalender
-            });
-        }
-      };
-    }
-    if (!title || !start) {
-      alert("Judul dan tanggal mulai harus diisi!");
-      return;
-    }
-    const eventData = {
-      title,
-      start: firebase.firestore.Timestamp.fromDate(new Date(start)),
-      end: end ? firebase.firestore.Timestamp.fromDate(new Date(end)) : null,
-      description,
-    };
-
-    if (id) {
-      // Update event
-      firestore
-        .collection("events")
-        .doc(id)
-        .update(eventData)
-        .then(() => {
-          closeModal("eventModal");
-          initScheduleCalendar();
-        });
-    } else {
-      // Add new event
-      firestore
-        .collection("events")
-        .add(eventData)
-        .then(() => {
-          closeModal("eventModal");
-          initScheduleCalendar();
-        });
-    }
-  };
-}
-
-// Modal Functions
-
-function openModal(id) {
-  const el = document.getElementById(id);
-  if (!el) {
-    console.error('Modal dengan id "' + id + '" tidak ditemukan!');
-    return;
-  }
-  el.style.display = "flex"; // lebih baik daripada 'block' untuk modal fleksibel
-  el.classList.add("active-modal"); // opsional jika kamu pakai efek CSS
-}
-
-function closeModal(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.style.display = "none";
-  el.classList.remove("active-modal");
-}
 
 // Copy Functions
 function copyInviteCode() {
@@ -3290,3 +3395,167 @@ window.onclick = function (event) {
     }
   });
 };
+
+// === FINAL VALIDATION AND TESTING FUNCTIONS ===
+
+// Comprehensive system validation
+function validateSystemIntegration() {
+  console.log('🔍 Starting ConsPIndo System Validation...');
+  
+  const results = {
+    firebase: false,
+    piSDK: false,
+    authentication: false,
+    payments: false,
+    security: false
+  };
+  
+  // Test Firebase
+  try {
+    if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+      results.firebase = true;
+      console.log('✅ Firebase: Initialized');
+    } else {
+      console.log('❌ Firebase: Not initialized');
+    }
+  } catch (e) {
+    console.log('❌ Firebase Error:', e.message);
+  }
+  
+  // Test Pi SDK
+  try {
+    if (typeof window.Pi !== 'undefined') {
+      results.piSDK = true;
+      console.log('✅ Pi SDK: Available');
+    } else {
+      console.log('❌ Pi SDK: Not available');
+    }
+  } catch (e) {
+    console.log('❌ Pi SDK Error:', e.message);
+  }
+  
+  // Test Security (HTTPS)
+  if (location.protocol === 'https:' || location.hostname === 'localhost') {
+    results.security = true;
+    console.log('✅ Security: HTTPS enforced');
+  } else {
+    console.log('❌ Security: HTTPS required');
+  }
+  
+  // Test Pi Authentication capability
+  if (results.piSDK && typeof window.Pi.authenticate === 'function') {
+    results.authentication = true;
+    console.log('✅ Pi Authentication: Available');
+  } else {
+    console.log('❌ Pi Authentication: Not available');
+  }
+  
+  // Test Pi Payment capability
+  if (results.piSDK && typeof window.Pi.createPayment === 'function') {
+    results.payments = true;
+    console.log('✅ Pi Payments: Available');
+  } else {
+    console.log('❌ Pi Payments: Not available');
+  }
+  
+  const overallSuccess = Object.values(results).every(Boolean);
+  console.log(overallSuccess ? '🎉 All systems operational!' : '⚠️ Some systems need attention');
+  
+  return results;
+}
+
+// Pi Browser specific validation
+function validatePiBrowserIntegration() {
+  const isPiBrowser = navigator.userAgent.includes('PiBrowser') || window.Pi;
+  const validationResults = {
+    environment: isPiBrowser,
+    sdkLoaded: typeof window.Pi !== 'undefined',
+    authReady: false,
+    paymentReady: false
+  };
+  
+  if (validationResults.sdkLoaded) {
+    try {
+      // Test authentication readiness
+      if (typeof window.Pi.authenticate === 'function') {
+        validationResults.authReady = true;
+      }
+      
+      // Test payment readiness
+      if (typeof window.Pi.createPayment === 'function') {
+        validationResults.paymentReady = true;
+      }
+    } catch (error) {
+      console.warn('Pi SDK validation warning:', error);
+    }
+  }
+  
+  // Display validation status in UI
+  const statusElement = document.getElementById('loginStatus');
+  if (statusElement) {
+    if (validationResults.environment && validationResults.sdkLoaded) {
+      statusElement.innerHTML = '<span style="color: green;">🟢 Pi Browser Ready</span>';
+    } else if (validationResults.sdkLoaded) {
+      statusElement.innerHTML = '<span style="color: orange;">🟡 Pi SDK Loaded</span>';
+    } else {
+      statusElement.innerHTML = '<span style="color: red;">🔴 Use Pi Browser</span>';
+    }
+  }
+  
+  return validationResults;
+}
+
+// Enhanced error reporting
+function reportSystemStatus() {
+  const systemStatus = validateSystemIntegration();
+  const piBrowserStatus = validatePiBrowserIntegration();
+  
+  const report = {
+    timestamp: new Date().toISOString(),
+    url: window.location.href,
+    userAgent: navigator.userAgent,
+    system: systemStatus,
+    piBrowser: piBrowserStatus,
+    recommendations: []
+  };
+  
+  // Generate recommendations
+  if (!systemStatus.security) {
+    report.recommendations.push('Enable HTTPS for production deployment');
+  }
+  if (!systemStatus.piSDK) {
+    report.recommendations.push('Use Pi Browser for Pi Network features');
+  }
+  if (!systemStatus.firebase) {
+    report.recommendations.push('Check Firebase configuration and network connectivity');
+  }
+  
+  console.log('📊 System Status Report:', report);
+  return report;
+}
+
+// Auto-validation on page load
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(() => {
+    console.log('🚀 ConsPIndo System Validation Starting...');
+    reportSystemStatus();
+    
+    // Show Pi Browser test link if not in Pi Browser
+    if (!navigator.userAgent.includes('PiBrowser')) {
+      console.log('💡 Tip: For full testing, use the Pi Browser test page: pi-browser-test.html');
+    }
+  }, 2000);
+});
+
+// Export validation functions for external testing
+window.ConsPIndoValidation = {
+  validateSystem: validateSystemIntegration,
+  validatePiBrowser: validatePiBrowserIntegration,
+  generateReport: reportSystemStatus
+};
+
+console.log('🔧 ConsPIndo validation system loaded');
+
+
+
+// End of main.js

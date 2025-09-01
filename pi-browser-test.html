@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConsPIndo - Pi Browser Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5d67b, #d4af37);
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #1d4ed8; }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .green { background: #28a745; }
+        .red { background: #dc3545; }
+        .yellow { background: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🚀 ConsPIndo - Pi Browser Integration Test</h1>
+        <p>This page tests all Pi Network integration features for your ConsPIndo app.</p>
+    </div>
+
+    <div class="test-container">
+        <h2>📋 Environment Detection</h2>
+        <div id="environment-results"></div>
+        <button onclick="runEnvironmentTests()">Run Environment Tests</button>
+    </div>
+
+    <div class="test-container">
+        <h2>🔧 Pi SDK Testing</h2>
+        <div id="sdk-results"></div>
+        <button onclick="runSDKTests()">Test Pi SDK</button>
+    </div>
+
+    <div class="test-container">
+        <h2>🔐 Pi Authentication Testing</h2>
+        <div id="auth-results"></div>
+        <button onclick="testPiAuthentication()">Test Pi Login</button>
+        <button onclick="testPiLogout()">Test Pi Logout</button>
+    </div>
+
+    <div class="test-container">
+        <h2>💰 Pi Payment Testing</h2>
+        <div id="payment-results"></div>
+        <button onclick="testPiPayment()">Test Pi Payment</button>
+    </div>
+
+    <div class="test-container">
+        <h2>🌐 Firebase Integration</h2>
+        <div id="firebase-results"></div>
+        <button onclick="testFirebaseConnection()">Test Firebase</button>
+    </div>
+
+    <div class="test-container">
+        <h2>📱 App Navigation</h2>
+        <div id="navigation-results"></div>
+        <a href="index.html" style="text-decoration: none;">
+            <button>Go to Main App</button>
+        </a>
+        <button onclick="testAppFeatures()">Test App Features</button>
+    </div>
+
+    <!-- Pi Network SDK -->
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Test Results Storage
+        let testResults = {};
+
+        // Utility Functions
+        function showResult(containerId, message, type = 'info') {
+            const container = document.getElementById(containerId);
+            const statusClass = type === 'success' ? 'green' : type === 'error' ? 'red' : 'yellow';
+            container.innerHTML += `
+                <div class="test-result ${type}">
+                    <span class="status-indicator ${statusClass}"></span>
+                    ${message}
+                </div>
+            `;
+        }
+
+        function clearResults(containerId) {
+            document.getElementById(containerId).innerHTML = '';
+        }
+
+        // Environment Detection Tests
+        function runEnvironmentTests() {
+            clearResults('environment-results');
+            
+            // Browser Detection
+            const userAgent = navigator.userAgent;
+            const isPiBrowser = userAgent.includes('PiBrowser');
+            showResult('environment-results', 
+                `Browser: ${isPiBrowser ? 'Pi Browser ✓' : 'Regular Browser'}`, 
+                isPiBrowser ? 'success' : 'warning'
+            );
+
+            // HTTPS Check
+            const isHTTPS = location.protocol === 'https:';
+            showResult('environment-results', 
+                `Protocol: ${location.protocol} ${isHTTPS ? '✓' : '✗'}`, 
+                isHTTPS ? 'success' : 'error'
+            );
+
+            // Screen Info
+            showResult('environment-results', 
+                `Screen: ${screen.width}x${screen.height}, Mobile: ${/Mobi|Android/i.test(userAgent)}`, 
+                'info'
+            );
+
+            // Network Status
+            showResult('environment-results', 
+                `Network: ${navigator.onLine ? 'Online ✓' : 'Offline ✗'}`, 
+                navigator.onLine ? 'success' : 'error'
+            );
+
+            testResults.environment = {
+                isPiBrowser,
+                isHTTPS,
+                isOnline: navigator.onLine
+            };
+        }
+
+        // Pi SDK Tests
+        function runSDKTests() {
+            clearResults('sdk-results');
+            
+            // Check Pi SDK Availability
+            if (typeof window.Pi !== 'undefined') {
+                showResult('sdk-results', 'Pi SDK: Loaded ✓', 'success');
+                
+                // Try to initialize
+                try {
+                    window.Pi.init({ version: "2.0", sandbox: false });
+                    showResult('sdk-results', 'Pi SDK: Initialized ✓', 'success');
+                    testResults.piSDK = true;
+                } catch (error) {
+                    showResult('sdk-results', `Pi SDK Init Error: ${error.message}`, 'error');
+                    testResults.piSDK = false;
+                }
+            } else {
+                showResult('sdk-results', 'Pi SDK: Not Available ✗', 'error');
+                showResult('sdk-results', 'Please use Pi Browser to access Pi features', 'warning');
+                testResults.piSDK = false;
+            }
+        }
+
+        // Pi Authentication Tests
+        function testPiAuthentication() {
+            clearResults('auth-results');
+            
+            if (!window.Pi) {
+                showResult('auth-results', 'Pi SDK not available - Use Pi Browser', 'error');
+                return;
+            }
+
+            showResult('auth-results', 'Starting Pi authentication...', 'info');
+            
+            window.Pi.authenticate(['username', 'payments'])
+                .then(function(auth) {
+                    showResult('auth-results', `Authentication Success ✓`, 'success');
+                    showResult('auth-results', `User: ${auth.user.username}`, 'success');
+                    showResult('auth-results', `UID: ${auth.user.uid}`, 'info');
+                    showResult('auth-results', `Access Token: ${auth.accessToken ? 'Present' : 'Missing'}`, 
+                        auth.accessToken ? 'success' : 'warning');
+                    
+                    // Store auth result
+                    localStorage.setItem('piTestAuth', JSON.stringify({
+                        username: auth.user.username,
+                        uid: auth.user.uid,
+                        timestamp: new Date().toISOString()
+                    }));
+                    
+                    testResults.authentication = true;
+                })
+                .catch(function(error) {
+                    showResult('auth-results', `Authentication Failed: ${error.message}`, 'error');
+                    showResult('auth-results', `Error Type: ${error.errorType || 'Unknown'}`, 'warning');
+                    testResults.authentication = false;
+                });
+        }
+
+        function testPiLogout() {
+            localStorage.removeItem('piTestAuth');
+            showResult('auth-results', 'Local session cleared ✓', 'info');
+        }
+
+        // Pi Payment Tests
+        function testPiPayment() {
+            clearResults('payment-results');
+            
+            if (!window.Pi) {
+                showResult('payment-results', 'Pi SDK not available', 'error');
+                return;
+            }
+
+            const paymentData = {
+                amount: 0.001, // Test amount
+                memo: "ConsPIndo Test Payment",
+                metadata: {
+                    test: true,
+                    app: 'ConsPIndo',
+                    timestamp: new Date().toISOString()
+                }
+            };
+
+            showResult('payment-results', 'Creating test payment...', 'info');
+
+            window.Pi.createPayment(paymentData, {
+                onReadyForServerApproval: function(paymentId) {
+                    showResult('payment-results', `Payment Created: ${paymentId}`, 'success');
+                    showResult('payment-results', 'Payment ready for approval ✓', 'info');
+                },
+                onReadyForServerCompletion: function(paymentId, txid) {
+                    showResult('payment-results', `Transaction ID: ${txid}`, 'success');
+                },
+                onCancel: function(paymentId) {
+                    showResult('payment-results', 'Payment cancelled by user', 'warning');
+                },
+                onError: function(error, payment) {
+                    showResult('payment-results', `Payment Error: ${error.message}`, 'error');
+                }
+            })
+            .then(function(payment) {
+                showResult('payment-results', 'Payment system functional ✓', 'success');
+                testResults.payments = true;
+            })
+            .catch(function(error) {
+                showResult('payment-results', `Payment Test Failed: ${error.message}`, 'error');
+                testResults.payments = false;
+            });
+        }
+
+        // Firebase Tests
+        function testFirebaseConnection() {
+            clearResults('firebase-results');
+            
+            try {
+                // Check if Firebase is loaded
+                if (typeof firebase !== 'undefined') {
+                    showResult('firebase-results', 'Firebase SDK: Loaded ✓', 'success');
+                    
+                    // Test Firebase config
+                    const config = {
+                        apiKey: "AIzaSyAlgUrADBMm5ocSooERlYFWQLcbLKykgP4",
+                        authDomain: "meribuco-conspindo.firebaseapp.com",
+                        projectId: "meribuco-conspindo",
+                        storageBucket: "meribuco-conspindo.appspot.com",
+                        messagingSenderId: "353214033063",
+                        appId: "1:353214033063:web:e20ae6399b68b687d9bf82"
+                    };
+                    
+                    firebase.initializeApp(config);
+                    showResult('firebase-results', 'Firebase: Initialized ✓', 'success');
+                    
+                    // Test Firestore connection
+                    const db = firebase.firestore();
+                    db.collection('test').limit(1).get()
+                        .then(() => {
+                            showResult('firebase-results', 'Firestore: Connected ✓', 'success');
+                            testResults.firebase = true;
+                        })
+                        .catch((error) => {
+                            showResult('firebase-results', `Firestore Error: ${error.message}`, 'warning');
+                            testResults.firebase = false;
+                        });
+                        
+                } else {
+                    showResult('firebase-results', 'Firebase SDK: Not Loaded ✗', 'error');
+                    testResults.firebase = false;
+                }
+            } catch (error) {
+                showResult('firebase-results', `Firebase Error: ${error.message}`, 'error');
+                testResults.firebase = false;
+            }
+        }
+
+        // App Features Test
+        function testAppFeatures() {
+            clearResults('navigation-results');
+            
+            // Test main app availability
+            showResult('navigation-results', 'Testing main app availability...', 'info');
+            
+            // Test if main app files exist
+            fetch('index.html')
+                .then(response => {
+                    if (response.ok) {
+                        showResult('navigation-results', 'Main app (index.html): Available ✓', 'success');
+                    } else {
+                        showResult('navigation-results', 'Main app: Not accessible', 'error');
+                    }
+                })
+                .catch(error => {
+                    showResult('navigation-results', `App availability error: ${error.message}`, 'error');
+                });
+
+            fetch('main.js')
+                .then(response => {
+                    if (response.ok) {
+                        showResult('navigation-results', 'JavaScript (main.js): Available ✓', 'success');
+                    } else {
+                        showResult('navigation-results', 'JavaScript: Not accessible', 'error');
+                    }
+                })
+                .catch(error => {
+                    showResult('navigation-results', `JavaScript error: ${error.message}`, 'error');
+                });
+
+            fetch('style.css')
+                .then(response => {
+                    if (response.ok) {
+                        showResult('navigation-results', 'Stylesheet (style.css): Available ✓', 'success');
+                    } else {
+                        showResult('navigation-results', 'Stylesheet: Not accessible', 'error');
+                    }
+                })
+                .catch(error => {
+                    showResult('navigation-results', `Stylesheet error: ${error.message}`, 'error');
+                });
+        }
+
+        // Auto-run basic tests on page load
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                runEnvironmentTests();
+                runSDKTests();
+            }, 1000);
+        });
+
+        // Generate test report
+        function generateTestReport() {
+            const report = {
+                timestamp: new Date().toISOString(),
+                url: window.location.href,
+                userAgent: navigator.userAgent,
+                results: testResults
+            };
+            
+            console.log('Test Report:', report);
+            return report;
+        }
+    </script>
+</body>
+</html>
